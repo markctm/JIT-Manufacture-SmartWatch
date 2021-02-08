@@ -51,6 +51,7 @@
 #include "app/IRController/IRController.h"
 #include "app/powermeter/powermeter_app.h"
 #include "app/FindPhone/FindPhone.h"
+#include "app/jitsupport/jitsupport_app.h"
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 
@@ -98,15 +99,16 @@ void setup()
     /*
      * add apps and widgets here!!!
      */
-    weather_app_setup();
-    stopwatch_app_setup();
-    alarm_clock_setup();
-    crypto_ticker_setup();
-    example_app_setup();
-    osmand_app_setup();
-    IRController_setup();
-    powermeter_app_setup();
-	FindPhone_setup();
+    // weather_app_setup();
+    // stopwatch_app_setup();
+    // alarm_clock_setup();
+    // crypto_ticker_setup();
+    // example_app_setup();
+    // osmand_app_setup();
+    // IRController_setup();
+    
+    jitsupport_app_setup();
+	// FindPhone_setup();
   	/*
      *
      */
@@ -129,6 +131,7 @@ void setup()
 
     disableCore0WDT();
     callback_print();
+    
 }
 
 void loop() {

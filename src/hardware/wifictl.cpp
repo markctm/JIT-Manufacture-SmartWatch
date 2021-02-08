@@ -53,6 +53,9 @@ TaskHandle_t _wifictl_Task;
 
 char *wifiname=NULL;
 char *wifipassword=NULL;
+char *wifi_ssid =  "2.4G Netvirtua apto 305.";
+char *wifi_psk =   "http3333";
+   
 
 static networklist *wifictl_networklist = NULL;
 wifictl_config_t wifictl_config;
@@ -102,7 +105,8 @@ void wifictl_setup( void ) {
         else {
           wifictl_set_event( WIFICTL_SCAN );
           wifictl_send_event_cb( WIFICTL_DISCONNECT, (void *)"scan ..." );
-          WiFi.scanNetworks();
+          // WiFi.scanNetworks();
+          WiFi.begin(wifi_ssid, wifi_psk);
         }
     }, WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
 
@@ -116,7 +120,7 @@ void wifictl_setup( void ) {
               wifiname = wifictl_networklist[ entry ].ssid;
               wifipassword = wifictl_networklist[ entry ].password;
               wifictl_send_event_cb( WIFICTL_SCAN, (void *)"connecting ..." );
-              WiFi.begin( wifiname, wifipassword );
+              WiFi.begin(wifi_ssid, wifi_psk);
               return;
             }
           }

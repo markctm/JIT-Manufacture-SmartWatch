@@ -116,7 +116,7 @@ void powermeter_load_config( void ) {
             strlcpy( powermeter_config.user, doc["powermeter"]["user"], sizeof( powermeter_config.user ) );
             strlcpy( powermeter_config.password, doc["powermeter"]["password"], sizeof( powermeter_config.password ) );
             strlcpy( powermeter_config.topic, doc["powermeter"]["topic"], sizeof( powermeter_config.topic ) );
-            powermeter_config.autoconnect = doc["powermeter"]["autoconnect"] | false;
+            powermeter_config.autoconnect = doc["powermeter"]["autoconnect"] | true;
             powermeter_config.widget = doc["powermeter"]["widget"] | false;
         }        
         doc.clear();
