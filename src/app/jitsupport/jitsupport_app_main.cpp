@@ -30,9 +30,11 @@
 #include "gui/mainbar/main_tile/main_tile.h"
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
-
+#include "hardware/motor.h"
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
+
+#define USE_SERIAL Serial
 
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -42,7 +44,11 @@ const char* mqtt_server = "192.168.0.12";
 
 HTTPClient http;
 
-
+TTGOClass *twatch;
+// PCF8563_Class *rtc;
+// AXP20X_Class *power;
+// bool irq = false;
+// bool BLisOn = false;
 
 /************************************   mqtt */
 
@@ -106,6 +112,9 @@ static lv_obj_t * lbl_actualcard;
 static lv_obj_t * lbl_totalcard;
 static lv_obj_t * lbl_count_separator;
 
+static lv_obj_t * lbl_IP;
+static lv_obj_t * lbl_RSSI;
+
 static lv_obj_t * btn_back;
 static lv_obj_t * btn_next;
 static lv_obj_t * btn_exit;
@@ -122,55 +131,42 @@ void jitsupport_app_task( lv_task_t * task );
 
 
 
-static void printCard(uint8_t posic){
+void printCard(uint8_t posic){
 
 
     lv_obj_set_hidden(bg_card, true); 
 
-    if(strcmp(chamados[(posic*7)+5],"Open")==0){
-      Serial.println("mostrei o botao");
+    if(strcmp(chamados[(posic*num_tickets)+5],"Open")==0){
+      // Serial.println("mostrei o botao");
       lv_obj_set_hidden(btn1, false); 
       
     }
     else{
-      Serial.println("escondi o botao");
+      // Serial.println("escondi o botao");
       lv_obj_set_hidden(btn1, true);
       
     }
     lv_obj_set_hidden(bg_card, false); 
-    lv_label_set_text(lbl_workstation,chamados[(posic*7)+0]);
-    lv_label_set_text(lbl_risk,chamados[(posic*7)+1]);
-    lv_label_set_text(lbl_calltime,chamados[(posic*7)+2]);
-    lv_label_set_text(lbl_description,chamados[(posic*7)+3]);
-    lv_label_set_text(lbl_status,chamados[(posic*7)+5]);
-    lv_label_set_text(lbl_user,chamados[(posic*7)+6]);
+    lv_label_set_text(lbl_workstation,chamados[(posic*num_tickets)+0]);
+    lv_label_set_text(lbl_risk,chamados[(posic*num_tickets)+1]);
+    lv_label_set_text(lbl_calltime,chamados[(posic*num_tickets)+2]);
+    lv_label_set_text(lbl_description,chamados[(posic*num_tickets)+3]);
+    lv_label_set_text(lbl_status,chamados[(posic*num_tickets)+5]);
+    lv_label_set_text(lbl_user,chamados[(posic*num_tickets)+6]);
 
-    Serial.println("********8 MEU CARD *******");
-
-    Serial.println(chamados[(posic*7)+0]);
-    Serial.println(chamados[(posic*7)+1]);
-    Serial.println(chamados[(posic*7)+2]);
-    Serial.println(chamados[(posic*7)+3]);
-    Serial.println(chamados[(posic*7)+4]);
-    Serial.println(chamados[(posic*7)+5]);
-    Serial.println(chamados[(posic*7)+6]);
-    
-
-
-
-
-
-Serial.println();
     Serial.print(atual);
     Serial.print("/");
     Serial.print(counter);
-    Serial.println();
+  
     sprintf (bufatual, "%d",atual);
   sprintf (buftotal, "%d",counter);
   lv_label_set_text(lbl_actualcard,bufatual);
   lv_label_set_text(lbl_totalcard,buftotal);
 
-  
+   powermgm_set_event(POWERMGM_WAKEUP_REQUEST);
+    motor_vibe(100);       
+   mainbar_jump_to_tilenumber( jitsupport_app_get_app_main_tile_num(), LV_ANIM_OFF );
+   statusbar_hide(true);
 }
 
 static void pub_mqtt(lv_obj_t *obj, lv_event_t event)
@@ -224,6 +220,107 @@ static void toggle_Cards_Off(){
 
         lv_obj_set_hidden(bg_card, true); 
 }
+void sendRequest(lv_obj_t *obj, lv_event_t event){
+
+  if (event == LV_EVENT_CLICKED) {
+
+     lv_obj_set_hidden(btn1, true);
+    StaticJsonDocument<200> doc2;
+
+      Serial.println("ESTE AQUI EH NOME ATUAL:");
+      Serial.println(nomefull);
+      doc2["TicketId"] = chamados[((atual-1)*num_tickets)+4];
+      doc2["UserName"] = nomefull;
+      doc2["Status"] = "Accepted";
+      doc2["Ip"] = ip_address;
+      String requestBody;
+      serializeJson(doc2, requestBody);
+  
+      Serial.println("Request que vou fazer:");
+      Serial.println(requestBody);
+      requestBody.toCharArray(payload,100);
+      client.publish(atualizartopico, payload);
+
+  }
+}
+void getWatchUser(){
+
+  String meuip = WiFi.localIP().toString();
+
+    meuip.toCharArray(ip_address,15);
+
+    Serial.println("MEU IP É O SEGUINTE:");
+    
+    Serial.print(ip_address);
+    lv_label_set_text(lbl_IP,ip_address);
+
+    strcat(GetWatchById_Url, GetWatchById_host);
+    strcat(GetWatchById_Url, ip_address);
+    
+    Serial.print("############ENDEREÇO DE API:");
+    Serial.println(GetWatchById_Url);
+
+    HTTPClient http;
+    int err = 0;
+    StaticJsonDocument<200> result;
+    StaticJsonDocument<200> userjson;
+
+       
+        // http.begin(GetWatchById_Url); //HTTP
+       http.begin("http://192.168.0.8:3000/watch");
+
+        int httpCode = http.GET();
+        Serial.println(httpCode);
+        if(httpCode > 0) {
+
+          
+            if(httpCode == HTTP_CODE_OK) {
+                String payload = http.getString();
+                Serial.println(payload);
+
+            
+                deserializeJson(result, payload);
+
+
+                deserializeJson(result, payload);
+                Serial.println(payload);
+
+                idTeam = result["teamId"];
+                Serial.println("ID do time getwatch:");
+                Serial.println(idTeam);
+                String numerotopico = String(idTeam);
+                NomeTopicoReceber = "receber/" + numerotopico;
+                NomeTopicoAtualizar = "atualizar/" + numerotopico;
+                Serial.println("Nome Topico Receber:");
+                Serial.println(NomeTopicoReceber);
+                 Serial.println("Nome Topico Atualizar:");
+                Serial.println(NomeTopicoAtualizar);
+                NomeTopicoReceber.toCharArray(nometopico,15);
+                NomeTopicoAtualizar.toCharArray(atualizartopico,15);
+
+              client.subscribe(nometopico);
+              client.subscribe(atualizartopico);
+
+                auto user = result["user"].as<const char*>();
+                Serial.println(user);
+                StaticJsonDocument<256> userObj;
+                deserializeJson(userObj, user);
+                auto id = userObj[0]["id"].as<int>();
+                auto text = userObj[0]["text"].as<const char*>();
+                strcpy(nomefull,text);
+                Serial.println(id);
+                Serial.println(text);
+                lv_label_set_text(lbl_RSSI,text);
+                
+              } else {
+                  USE_SERIAL.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+              }
+
+        http.end();
+
+          }
+}
+
 
 static void removefromArray(lv_obj_t *obj, lv_event_t event){
 
@@ -233,35 +330,53 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
     uint8_t tam = counter-1;
     uint8_t i;
 
+    Serial.print("Counter:");
+    Serial.println(counter);
+    Serial.print("Atual:");
+    Serial.println(atual);
+    Serial.print("Pos:");
+    Serial.println(pos);
+    Serial.print("Tam:");
+    Serial.println(tam);
+
 
     for(i=pos; i<tam; i++)
           {
-              strcpy(chamados[(i*7)+0],chamados[(i*7)+7]);
-              strcpy(chamados[(i*7)+1],chamados[(i*7)+8]);
-              strcpy(chamados[(i*7)+2],chamados[(i*7)+9]);
-              strcpy(chamados[(i*7)+3],chamados[(i*7)+10]);
-              strcpy(chamados[(i*7)+4],chamados[(i*7)+11]);
-              strcpy(chamados[(i*7)+5],chamados[(i*7)+12]);
-              strcpy(chamados[(i*7)+6],chamados[(i*7)+13]);
+
+              strcpy(chamados[(i*num_tickets)+0],chamados[(i*num_tickets)+num_tickets+0]);
+              strcpy(chamados[(i*num_tickets)+1],chamados[(i*num_tickets)+num_tickets+1]);
+              strcpy(chamados[(i*num_tickets)+2],chamados[(i*num_tickets)+num_tickets+2]);
+              strcpy(chamados[(i*num_tickets)+3],chamados[(i*num_tickets)+num_tickets+3]);
+              strcpy(chamados[(i*num_tickets)+4],chamados[(i*num_tickets)+num_tickets+4]);
+              strcpy(chamados[(i*num_tickets)+5],chamados[(i*num_tickets)+num_tickets+5]);
+              strcpy(chamados[(i*num_tickets)+6],chamados[(i*num_tickets)+num_tickets+6]);
           };
 
 
     counter--;
 
+    Serial.print("Counter:");
+    Serial.println(counter);
+    Serial.print("Atual:");
+    Serial.println(atual);
+
     if(atual==counter+1){
 
+      Serial.println("Atual = counter+1");
       atual = counter;
     }
 
     printCard(atual-1);
   }
   if(counter==0){
+      Serial.println("Counter=0");
       toggle_Cards_Off();
   }
   
 };
-  
-void callback(char* topic, byte* message, unsigned int length) {
+
+
+  void callback(char* topic, byte* message, unsigned int length) {
   Serial.print("Message arrived on topic: ");
   Serial.print(topic);
   Serial.print(". Message: ");
@@ -272,11 +387,180 @@ void callback(char* topic, byte* message, unsigned int length) {
     messageTemp += (char)message[i];
   }
   Serial.println();
+ Serial.println("O QUE CHEGOU AQUI FOI");
+Serial.println(messageTemp);
 
-  if (String(topic) == "esp32/output") {
+  StaticJsonDocument<200> result;
+  deserializeJson(result, messageTemp);
 
+if (String(topic) == NomeTopicoReceber) {
+    Serial.println("RECEBERCHAMADO *****************");
+    
+    auto id = result["id"].as<const char*>();
+    Serial.println(id);
+    auto workstation = result["workstation"].as<const char*>();
+    Serial.println(workstation);
+    auto risk = result["risk"].as<const char*>();
+    Serial.println(risk);
+    auto calltime = result["calltime"].as<const char*>();
+    Serial.println(calltime);
+    auto description = result["description"].as<const char*>();
+    Serial.println(description);
+
+  Serial.println("VALOR DO COUNTER EH:");
+  Serial.println(counter);
+    if(!(counter==num_tickets)){
+
+            //   if(BLisOn){
+              
+            //   }
+            //   else{
+            //     ttgo->openBL();
+            //     BLisOn = true;
+            //   }
+            // ttgo->motor->onec();
+              strcpy(chamados[(counter*num_tickets)+0],workstation);
+            
+
+            strcpy(chamados[(counter*num_tickets)+1],risk);
+            Serial.println("TESTE DO RISCO");
+            
+
+            Serial.print("Bool 1:");
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1")==0);
+            Serial.print("Bool 2:");
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0")==0);
+            Serial.print("Bool 3:");
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
+            Serial.print("Bool 4:");
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+            if(strcmp(chamados[(counter*num_tickets)+1],"1")==0){
+              sprintf(chamados[(counter*num_tickets)+1],"Rodando");
+              Serial.println("Linha rodando");
+            }
+            else if(strcmp(chamados[(counter*num_tickets)+1],"0")==0){
+              Serial.println("Linha parada");
+              sprintf(chamados[(counter*num_tickets)+1],"Parada");
+            }
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+            strcpy(chamados[(counter*num_tickets)+2],calltime);
+
+            strcpy(chamados[(counter*num_tickets)+3],description);
+          
+            strcpy(chamados[(counter*num_tickets)+4],id);
+            strcpy(chamados[(counter*num_tickets)+5],"Open");
+            strcpy(chamados[(counter*num_tickets)+6],"");
+            counter = counter +1;
+            atual = counter;
+            printCard(counter-1);
+            
+            toggle_Cards_On();
+            
+            
+            // twatch->motor->onec();
+            }
   }
+else if(String(topic) == NomeTopicoAtualizar) {
+    Serial.print("ATUALIZAR CHAMADO ************");
+
+
+        // if(BLisOn){
+            
+        //   }
+        //   else{
+        //     ttgo->openBL();
+        //     BLisOn = true;
+        //   }
+        // ttgo->motor->onec();
+
+        char idbuscado [3];
+         char userbuscado [20];
+         char statusbuscado [20];
+         
+        strcpy(idbuscado,result["TicketId"]);
+        Serial.print("ID RECEBIDA:");
+        Serial.println(idbuscado);
+        
+        
+        Serial.println("USUARIO RECEBIDO");
+        
+        strcpy(userbuscado,result["UserName"]);
+        Serial.println(userbuscado);
+        for(int z=0;z<10;z++){
+          Serial.println(userbuscado[z]);
+          
+          if(isWhitespace(userbuscado[z])) {
+            
+            break;
+          }
+          else{
+            nomepeq[z]=userbuscado[z];
+
+          }
+        }
+         Serial.println("USUARIO trim");
+         Serial.println(nomepeq);
+        String stats = result["Status"];
+        stats.toCharArray(statusbuscado,20);
+        Serial.println("STATUS RECEBIDO");
+        Serial.println(stats);
+        Serial.println(statusbuscado);
+        
+
+        Serial.print("Counter: ");
+        Serial.println(counter);
+        for (int i = 4; i <= ((counter*num_tickets)-3); i=i+num_tickets) {
+        Serial.print("i: ");
+        Serial.println(i);
+
+        Serial.print("Ids: ");
+        Serial.println(chamados[i]);
+
+           if(strcmp(chamados[i], idbuscado)==0){
+
+            Serial.println("Achei meu chamado buscado");
+            strcpy(chamados[i+1],statusbuscado);
+            strcpy(chamados[i+2],nomepeq);
+            Serial.println(chamados[i-4]);
+            Serial.println(chamados[i-3]);
+            Serial.println(chamados[i-2]);
+            Serial.println(chamados[i-1]);
+            Serial.println(chamados[i]);
+            Serial.println(chamados[i+1]);
+            Serial.println(chamados[i+2]);
+            atual=((i-4)/num_tickets)+1;
+            printCard(atual-1);
+            if(strcmp(statusbuscado,"Done")==0){
+              Serial.println("SIM, O STATUS EH DONE!!!!!!!");
+              removefromArray(btn2,LV_EVENT_CLICKED);
+            }
+            
+            break;
+           }
+        }
+         
+        // twatch->motor->onec();
+    
+  }
+ 
 }
+// void callback(char* topic, byte* message, unsigned int length) {
+//   Serial.print("Message arrived on topic: ");
+//   Serial.print(topic);
+//   Serial.print(". Message: ");
+//   String messageTemp;
+  
+//   for (int i = 0; i < length; i++) {
+//     Serial.print((char)message[i]);
+//     messageTemp += (char)message[i];
+//   }
+//   Serial.println();
+
+//   if (String(topic) == "esp32/output") {
+
+//   }
+// }
 
 
 
@@ -351,7 +635,14 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_label_set_text(lbl_nocard, "Sem chamados.");
     lv_obj_align(lbl_nocard, jitsupport_cont, LV_ALIGN_CENTER, 0, 0);
 
+    lbl_IP = lv_label_create(jitsupport_cont, NULL);
+    lv_label_set_text(lbl_IP, "0.0.0.0");
+    lv_obj_align(lbl_IP, jitsupport_cont, LV_ALIGN_CENTER, 0, 20);
+
     
+    lbl_RSSI = lv_label_create(jitsupport_cont, NULL);
+    lv_label_set_text(lbl_RSSI, "-0");
+    lv_obj_align(lbl_RSSI, jitsupport_cont, LV_ALIGN_IN_LEFT_MID, 5, 40);
  
     
     bg_card = lv_obj_create(jitsupport_cont, NULL);
@@ -403,7 +694,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_set_pos(btn1, 10, 125);
     lv_obj_set_width(btn1,95);
     lv_obj_set_height(btn1,35);
-    // lv_obj_set_event_cb(btn1, sendRequest);
+    lv_obj_set_event_cb(btn1, sendRequest);
     
     // BUTTON 1 LABEL
     lv_obj_t * lbl_btn1;
@@ -485,10 +776,14 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_t * lbl_btn_config;
     lbl_btn_config = lv_label_create(btn_config, NULL);
     lv_label_set_text(lbl_btn_config, LV_SYMBOL_SETTINGS);
-    lv_obj_set_event_cb(btn_config, pub_mqtt);
+    // lv_obj_set_event_cb(btn_config, pub_mqtt);
+
+
+  
 
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+  
 
   
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_event_cb, "jitsupport app loop" );
@@ -536,8 +831,11 @@ void reconnect() {
     // Attempt to connect
     if (client.connect("smartwatch")) {
       Serial.println("connected");
+      getWatchUser();
       // Subscribe
-      client.subscribe("esp32/output");
+      
+      client.subscribe(nometopico);
+      client.subscribe(atualizartopico);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());

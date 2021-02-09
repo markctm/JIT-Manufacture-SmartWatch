@@ -72,7 +72,7 @@ void gui_setup( void )
     display_settings_tile_setup();
     move_settings_tile_setup();
     wlan_settings_tile_setup();
-    bluetooth_settings_tile_setup();
+    // bluetooth_settings_tile_setup();
     time_settings_tile_setup();
     update_tile_setup();
     utilities_tile_setup();
