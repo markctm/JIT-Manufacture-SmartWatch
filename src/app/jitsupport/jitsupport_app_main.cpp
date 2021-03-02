@@ -39,16 +39,21 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <PubSubClient.h>
-const char* mqtt_server = "192.168.0.12";
+const char* mqtt_server = "172.24.76.90";
 
+String meuip;
 
 HTTPClient http;
-
+StaticJsonDocument<200> result;
+StaticJsonDocument<200> userjson;
+int httpCode = 0;
 TTGOClass *twatch;
 // PCF8563_Class *rtc;
 // AXP20X_Class *power;
 // bool irq = false;
 // bool BLisOn = false;
+
+bool pegueiUser = false;
 
 /************************************   mqtt */
 
@@ -245,7 +250,8 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
 }
 void getWatchUser(){
 
-  String meuip = WiFi.localIP().toString();
+pegueiUser = true;
+   meuip = WiFi.localIP().toString();
 
     meuip.toCharArray(ip_address,15);
 
@@ -260,16 +266,15 @@ void getWatchUser(){
     Serial.print("############ENDEREÇO DE API:");
     Serial.println(GetWatchById_Url);
 
-    HTTPClient http;
+    
     int err = 0;
-    StaticJsonDocument<200> result;
-    StaticJsonDocument<200> userjson;
+    
 
        
-        // http.begin(GetWatchById_Url); //HTTP
-       http.begin("http://192.168.0.8:3000/watch");
+        http.begin(GetWatchById_Url); //HTTP
+      //  http.begin("http://192.168.0.8:3000/watch");
 
-        int httpCode = http.GET();
+        httpCode = http.GET();
         Serial.println(httpCode);
         if(httpCode > 0) {
 
@@ -312,8 +317,10 @@ void getWatchUser(){
                 Serial.println(text);
                 lv_label_set_text(lbl_RSSI,text);
                 
+                
               } else {
                   USE_SERIAL.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+                  
               }
 
         http.end();
@@ -829,19 +836,23 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("smartwatch")) {
+    if (client.connect(ip_address)) {
       Serial.println("connected");
-      getWatchUser();
+      if(!(pegueiUser)){
+          getWatchUser();
+      }
+      
       // Subscribe
       
       client.subscribe(nometopico);
       client.subscribe(atualizartopico);
+      client.subscribe("ttwatch");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
+      Serial.println(" try again in 1 seconds");
       // Wait 5 seconds before retrying
-      delay(5000);
+      delay(1000);
     }
   }
 }

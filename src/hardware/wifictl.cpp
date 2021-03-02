@@ -53,9 +53,12 @@ TaskHandle_t _wifictl_Task;
 
 char *wifiname=NULL;
 char *wifipassword=NULL;
-char *wifi_ssid =  "2.4G Netvirtua apto 305.";
-char *wifi_psk =   "http3333";
-   
+// char *wifi_ssid =  "2.4G Netvirtua apto 305.";
+// char *wifi_psk =   "http3333";
+
+
+char *wifi_ssid =  "JAB_RASP0001";
+char *wifi_psk =   "g4keKDI2RkXQT";
 
 static networklist *wifictl_networklist = NULL;
 wifictl_config_t wifictl_config;
