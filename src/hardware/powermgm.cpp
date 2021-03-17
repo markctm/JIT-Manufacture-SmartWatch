@@ -60,7 +60,7 @@ void powermgm_setup( void ) {
     touch_setup();
     timesync_setup();
     rtcctl_setup();
-    blectl_read_config();
+    //blectl_read_config();
     sound_read_config();
     
     powermgm_set_event( POWERMGM_WAKEUP );
@@ -71,7 +71,7 @@ void powermgm_loop( void ) {
     if( powermgm_get_event( POWERMGM_PMU_BUTTON | POWERMGM_BMA_DOUBLECLICK | POWERMGM_BMA_TILT | POWERMGM_RTC_ALARM ) ) {
         if ( powermgm_get_event( POWERMGM_STANDBY ) || powermgm_get_event( POWERMGM_SILENCE_WAKEUP ) ) {
             Serial.println("LIGANDO POR BOTAO");
-            powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
+            powermgm_set_event( POWERMGM_WAKEUP_REQUEST);
         }
         else {
             if ( powermgm_get_event( POWERMGM_PMU_BUTTON | POWERMGM_BMA_DOUBLECLICK ) ) {
@@ -82,8 +82,8 @@ void powermgm_loop( void ) {
         powermgm_clear_event( POWERMGM_PMU_BUTTON | POWERMGM_BMA_DOUBLECLICK  | POWERMGM_BMA_TILT | POWERMGM_RTC_ALARM );
     }
 
-    if ( powermgm_get_event( POWERMGM_WAKEUP_REQUEST ) && powermgm_get_event( POWERMGM_WAKEUP ) ) {
-        lv_disp_trig_activity( NULL );
+    if ( powermgm_get_event(POWERMGM_WAKEUP_REQUEST ) && powermgm_get_event( POWERMGM_WAKEUP ) ) {
+        lv_disp_trig_activity(NULL);
         powermgm_clear_event( POWERMGM_WAKEUP_REQUEST );
     }
   

@@ -57,8 +57,14 @@ char *wifipassword=NULL;
 // char *wifi_psk =   "http3333";
 
 
-char *wifi_ssid =  "JAB_RASP0001";
-char *wifi_psk =   "g4keKDI2RkXQT";
+//char *wifi_ssid =  "JAB_RASP0001";
+//char *wifi_psk =   "g4keKDI2RkXQT";
+
+//Personal 
+char *wifi_ssid =  "TooPrede";
+char *wifi_psk =   "12345678";
+
+
 
 static networklist *wifictl_networklist = NULL;
 wifictl_config_t wifictl_config;
@@ -76,6 +82,10 @@ void wifictl_load_config( void );
 void wifictl_Task( void * pvParameters );
 
 void wifictl_setup( void ) {
+
+
+    Serial.print("Wifi Setup...");
+
     if ( wifi_init == true )
         return;
 
@@ -89,6 +99,9 @@ void wifictl_setup( void ) {
       log_e("wifictl_networklist calloc faild");
       while(true);
     }
+
+
+    
 
     // clean network list table
     for ( int entry = 0 ; entry < NETWORKLIST_ENTRYS ; entry++ ) {

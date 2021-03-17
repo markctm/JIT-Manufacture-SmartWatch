@@ -90,6 +90,7 @@ void setup()
     }
 
     splash_screen_stage_update( "init powermgm", 60 );
+
     powermgm_setup();
     splash_screen_stage_update( "init gui", 80 );
     splash_screen_stage_finish();
@@ -106,16 +107,22 @@ void setup()
     // example_app_setup();
     // osmand_app_setup();
     // IRController_setup();
-    
-    jitsupport_app_setup();
+     
+
 	// FindPhone_setup();
   	/*
      *
      */
     if ( wifictl_get_autoon() && ( pmu_is_charging() || pmu_is_vbus_plug() || ( pmu_get_battery_voltage() > 3400) ) )
+        Serial.print("Wifi wifictl_on Called");
         wifictl_on();
 
     // enable to store data in normal heap
+    //delay(500);
+    jitsupport_app_setup();
+
+
+
     heap_caps_malloc_extmem_enable( 16*1024 );
     blectl_setup();
     sound_setup();

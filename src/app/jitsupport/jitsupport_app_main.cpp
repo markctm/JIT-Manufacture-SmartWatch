@@ -39,7 +39,14 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <PubSubClient.h>
-const char* mqtt_server = "172.24.76.90";
+const char* mqtt_server = "test.mosquitto.org";
+
+
+//const char* mqtt_server = "m16.cloudmqtt.com"; // enter mqtt server 
+//const int mqttPort = 10304; //enter mqtt port
+//const char* mqttUser = "pbgjzbad";  //enter mqtt user
+//const char* mqttPassword = "KhwBxhvkWZFq"; // enter mqtt password
+
 
 String meuip;
 
@@ -164,14 +171,14 @@ void printCard(uint8_t posic){
     Serial.print(counter);
   
     sprintf (bufatual, "%d",atual);
-  sprintf (buftotal, "%d",counter);
-  lv_label_set_text(lbl_actualcard,bufatual);
-  lv_label_set_text(lbl_totalcard,buftotal);
+    sprintf (buftotal, "%d",counter);
+    lv_label_set_text(lbl_actualcard,bufatual);
+    lv_label_set_text(lbl_totalcard,buftotal);
 
-   powermgm_set_event(POWERMGM_WAKEUP_REQUEST);
+    powermgm_set_event(POWERMGM_WAKEUP_REQUEST);
     motor_vibe(100);       
-   mainbar_jump_to_tilenumber( jitsupport_app_get_app_main_tile_num(), LV_ANIM_OFF );
-   statusbar_hide(true);
+    mainbar_jump_to_tilenumber( jitsupport_app_get_app_main_tile_num(), LV_ANIM_OFF );
+    statusbar_hide(true);
 }
 
 static void pub_mqtt(lv_obj_t *obj, lv_event_t event)
@@ -250,12 +257,12 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
 }
 void getWatchUser(){
 
-pegueiUser = true;
+  pegueiUser = true;
    meuip = WiFi.localIP().toString();
 
     meuip.toCharArray(ip_address,15);
 
-    Serial.println("MEU IP É O SEGUINTE:");
+    Serial.print("MEU IP É O SEGUINTE:");
     
     Serial.print(ip_address);
     lv_label_set_text(lbl_IP,ip_address);

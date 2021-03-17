@@ -293,6 +293,8 @@ void update_Task( void * pvParameters ) {
     if ( ( xEventGroupGetBits( update_event_handle) & UPDATE_REQUEST ) && ( update_get_url() != NULL ) ) {
         if( WiFi.status() == WL_CONNECTED ) {
 
+            Serial.print("No Wifi !! \n");
+
             uint32_t display_timeout = display_get_timeout();
             display_set_timeout( DISPLAY_MAX_TIMEOUT );
 
