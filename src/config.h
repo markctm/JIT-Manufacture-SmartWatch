@@ -45,8 +45,11 @@
 
 
     //-----WIFI--AUTHENTICATION---
-    #define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
-    #define WIFI_PASSWORD     "3617970200"
+    //#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
+    //#define WIFI_PASSWORD     "3617970200"
+    
+    #define WIFI_SSID         "TooPrede"
+    #define WIFI_PASSWORD     "12345678"
 
 
 

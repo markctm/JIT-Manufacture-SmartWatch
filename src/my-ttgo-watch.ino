@@ -47,10 +47,6 @@
 
 
 
-
-
-
-
 TTGOClass *ttgo = TTGOClass::getWatch();
 
 void setup()
@@ -97,7 +93,7 @@ void setup()
 
     /*************************************************************
        INITIALIZE APPLICATIONS 
-
+       
         1- Jabil IT Support APP
 
      **************************************************************/
@@ -110,7 +106,7 @@ void setup()
         wifictl_on();
 
     heap_caps_malloc_extmem_enable( 16*1024 );
-    blectl_setup();
+    //blectl_setup();
     sound_setup();
 
     display_set_brightness( display_get_brightness() );

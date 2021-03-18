@@ -31,7 +31,7 @@ lv_obj_t *preload = NULL;
 lv_obj_t *preload_label = NULL;
 lv_style_t style;
 
-LV_IMG_DECLARE(Jabil);
+LV_IMG_DECLARE(jabil);
 
 void splash_screen_stage_one( void ) {
 
@@ -65,7 +65,7 @@ void splash_screen_stage_one( void ) {
     }
     else {
         log_i("use default boot logo");
-        lv_img_set_src( logo, &Jabil );
+        lv_img_set_src( logo, &jabil );
     }
     lv_obj_align( logo, NULL, LV_ALIGN_CENTER, 0, 0 );
 
