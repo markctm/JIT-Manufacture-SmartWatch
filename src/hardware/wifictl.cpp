@@ -53,18 +53,6 @@ TaskHandle_t _wifictl_Task;
 
 char *wifiname=NULL;
 char *wifipassword=NULL;
-// char *wifi_ssid =  "2.4G Netvirtua apto 305.";
-// char *wifi_psk =   "http3333";
-
-
-//char *wifi_ssid =  "JAB_RASP0001";
-//char *wifi_psk =   "g4keKDI2RkXQT";
-
-//Personal 
-char *wifi_ssid =  "TooPrede";
-char *wifi_psk =   "12345678";
-
-
 
 static networklist *wifictl_networklist = NULL;
 wifictl_config_t wifictl_config;
@@ -83,25 +71,17 @@ void wifictl_Task( void * pvParameters );
 
 void wifictl_setup( void ) {
 
-
-    Serial.print("Wifi Setup...");
-
     if ( wifi_init == true )
         return;
 
     wifictl_status = xEventGroupCreate();
-
     wifi_init = true;
-
     wifictl_networklist = (networklist*)CALLOC( sizeof( networklist ) * NETWORKLIST_ENTRYS, 1 );
 
     if( !wifictl_networklist ) {
       log_e("wifictl_networklist calloc faild");
       while(true);
     }
-
-
-    
 
     // clean network list table
     for ( int entry = 0 ; entry < NETWORKLIST_ENTRYS ; entry++ ) {
@@ -111,6 +91,9 @@ void wifictl_setup( void ) {
 
     // load config from spiff
     wifictl_load_config();
+
+    //Habilita o wifi no modo standby
+    wifictl_set_enable_on_standby(true);
 
     // register WiFi events
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
@@ -122,7 +105,7 @@ void wifictl_setup( void ) {
           wifictl_set_event( WIFICTL_SCAN );
           wifictl_send_event_cb( WIFICTL_DISCONNECT, (void *)"scan ..." );
           // WiFi.scanNetworks();
-          WiFi.begin(wifi_ssid, wifi_psk);
+          WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
         }
     }, WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
 
@@ -136,7 +119,7 @@ void wifictl_setup( void ) {
               wifiname = wifictl_networklist[ entry ].ssid;
               wifipassword = wifictl_networklist[ entry ].password;
               wifictl_send_event_cb( WIFICTL_SCAN, (void *)"connecting ..." );
-              WiFi.begin(wifi_ssid, wifi_psk);
+              WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
               return;
             }
           }
@@ -220,19 +203,24 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
     bool retval = true;
     
     switch( event ) {
+      
         case POWERMGM_STANDBY:          
-            if ( !wifictl_config.enable_on_standby || wifictl_get_event( WIFICTL_OFF ) ) {
-                wifictl_standby();
-            }
-            else {
-              log_w("standby blocked by \"enable on standby\" option");
-              retval = false;
-            }
-                                        break;
-        case POWERMGM_WAKEUP:           wifictl_wakeup();
-                                        break;
-        case POWERMGM_SILENCE_WAKEUP:   wifictl_wakeup();
-                                        break;
+              if ( !wifictl_config.enable_on_standby || wifictl_get_event( WIFICTL_OFF ) ) {            
+                 wifictl_standby();
+              }
+              else {
+                log_w("standby blocked by \"enable on standby\" option");
+                retval = false;
+              }
+             break;
+
+        case POWERMGM_WAKEUP:    
+              wifictl_wakeup();
+              break;
+
+        case POWERMGM_SILENCE_WAKEUP:   
+              wifictl_wakeup();
+              break;
     }
     return( retval );
 }

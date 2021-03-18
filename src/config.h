@@ -39,9 +39,16 @@
     #define USE_EXTENDED_CHARSET CHARSET_CYRILLIC
 
     /*
-    * firmeware version string
+    * Firmware version string
     */
-    #define __FIRMWARE__            "2020123101"
+    #define __FIRMWARE__            "TT_WATCH_JABIL"
+
+
+    //-----WIFI--AUTHENTICATION---
+    #define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
+    #define WIFI_PASSWORD     "3617970200"
+
+
 
     #ifdef __cplusplus // Allows to include config.h from C code
         #include <LilyGoWatch.h>
