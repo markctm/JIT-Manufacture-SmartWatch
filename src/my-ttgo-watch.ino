@@ -98,7 +98,7 @@ void setup()
 
      **************************************************************/
 
-    jitsupport_app_setup();
+    //jitsupport_app_setup();
      
 
     if ( wifictl_get_autoon() && ( pmu_is_charging() || pmu_is_vbus_plug() || ( pmu_get_battery_voltage() > 3400) ) )

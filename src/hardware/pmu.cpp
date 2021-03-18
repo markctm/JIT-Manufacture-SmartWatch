@@ -286,7 +286,7 @@ void pmu_read_config( void ) {
             pmu_config.experimental_power_save = doc["experimental_power_save"] | false;
             pmu_config.compute_percent = doc["compute_percent"] | false;
             pmu_config.high_charging_target_voltage = doc["high_charging_target_voltage"] | false;
-            pmu_config.designed_battery_cap = doc["designed_battery_cap"] | 300;
+            pmu_config.designed_battery_cap = doc["designed_battery_cap"] | 1000;
             pmu_config.normal_voltage = doc["normal_voltage"] | NORMALVOLTAGE;
             pmu_config.normal_power_save_voltage = doc["normal_power_save_voltage"] | NORMALPOWERSAVEVOLTAGE;
             pmu_config.experimental_normal_voltage = doc["experimental_normal_voltage"] | EXPERIMENTALNORMALVOLTAGE;

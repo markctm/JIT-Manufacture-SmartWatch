@@ -48,8 +48,14 @@
     //#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
     //#define WIFI_PASSWORD     "3617970200"
     
-    #define WIFI_SSID         "TooPrede"
-    #define WIFI_PASSWORD     "12345678"
+    #define WIFI_SSID         "TooPrede"                    /** @brief define SSID DA REDE */
+    #define WIFI_PASSWORD     "12345678"                     /** @brief Passaporte  */
+
+    //#define WIFI_SSID         "JAB_RASP0001"
+    //#define WIFI_PASSWORD     "g4keKDI2RkXQT"
+
+
+
 
 
 
