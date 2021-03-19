@@ -305,7 +305,7 @@ void getWatchUser(){
                 NomeTopicoAtualizar = "atualizar/" + numerotopico;
                 Serial.println("Nome Topico Receber:");
                 Serial.println(NomeTopicoReceber);
-                 Serial.println("Nome Topico Atualizar:");
+                Serial.println("Nome Topico Atualizar:");
                 Serial.println(NomeTopicoAtualizar);
                 NomeTopicoReceber.toCharArray(nometopico,15);
                 NomeTopicoAtualizar.toCharArray(atualizartopico,15);
@@ -839,8 +839,10 @@ void newticket(JsonObject jsonObj){
 
 
 void reconnect() {
+
+  uint8_t ct_tentative =0;
   // Loop until we're reconnected
-  while (!client.connected()) {
+    
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     if (client.connect(ip_address)) {
@@ -862,15 +864,31 @@ void reconnect() {
       delay(1000);
     }
   }
-}
+
 
 
 bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
     // put your code her
-    
-    if (!client.connected()) {
-    reconnect();
-  }
+    static uint8_t ct_standyby=0;
+    static uint8_t ct_wakeup=0;
+    static uint8_t ct_silence_wakeup=0;
+
+    switch( event ) {
+        case POWERMGM_STANDBY:  
+               Serial.print("POWERMGM_STANDBY");
+                ct_standyby++;
+                if(ct_standyby%50==0){
+                  if (!client.connected()) reconnect();
+                  } 
+            break;
+        case POWERMGM_WAKEUP:    
+              Serial.print("POWERMGM_WAKEUP");            
+            break;
+        case POWERMGM_SILENCE_WAKEUP:     
+              Serial.print("POWERMGM_SILENCE_WAKEUP");           
+            break;
+    }
+
   client.loop();;
 return( true );
 }

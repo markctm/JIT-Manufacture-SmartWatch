@@ -54,11 +54,6 @@
     //#define WIFI_SSID         "JAB_RASP0001"
     //#define WIFI_PASSWORD     "g4keKDI2RkXQT"
 
-
-
-
-
-
     #ifdef __cplusplus // Allows to include config.h from C code
         #include <LilyGoWatch.h>
         #define _CONFIG_H 
