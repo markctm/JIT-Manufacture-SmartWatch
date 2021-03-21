@@ -48,8 +48,8 @@
     //#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
     //#define WIFI_PASSWORD     "3617970200"
     
-    #define WIFI_SSID         "TooPrede"                    /** @brief define SSID DA REDE */
-    #define WIFI_PASSWORD     "12345678"                     /** @brief Passaporte  */
+    #define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
+    #define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
     
 
 
@@ -63,27 +63,9 @@
     //#define WIFI_PASSWORD     "g4keKDI2RkXQT"
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #ifdef __cplusplus // Allows to include config.h from C code
-        #include <LilyGoWatch.h>
-        #define _CONFIG_H 
-    #endif
+#ifdef __cplusplus // Allows to include config.h from C code
+    #include <LilyGoWatch.h>
+    #define _CONFIG_H 
+#endif
 
 #endif // _CONFIG_H
