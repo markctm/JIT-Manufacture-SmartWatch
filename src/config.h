@@ -50,9 +50,36 @@
     
     #define WIFI_SSID         "TooPrede"                    /** @brief define SSID DA REDE */
     #define WIFI_PASSWORD     "12345678"                     /** @brief Passaporte  */
+    
+
+
+    //------MQTT---CONNECTION------
+    
+    #define MQTT_SERVER                 "test.mosquitto.org"
+    #define CHECK_MQTT_CONNECTION_MILLI_SECONDS       4000
+
 
     //#define WIFI_SSID         "JAB_RASP0001"
     //#define WIFI_PASSWORD     "g4keKDI2RkXQT"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     #ifdef __cplusplus // Allows to include config.h from C code
         #include <LilyGoWatch.h>
