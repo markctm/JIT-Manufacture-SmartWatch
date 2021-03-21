@@ -39,7 +39,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <PubSubClient.h>
-const char* mqtt_server = "test.mosquitto.org";
+
 
 
 //const char* mqtt_server = "m16.cloudmqtt.com"; // enter mqtt server 
@@ -62,11 +62,17 @@ TTGOClass *twatch;
 
 bool pegueiUser = false;
 
-/************************************   mqtt */
+/*********MQTT****************** */
 
-
+const char* mqtt_server = MQTT_SERVER;
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+TaskHandle_t _mqttCheck_Task;
+void Check_MQTT_Task( void * pvParameters );
+
+
+
 
 uint8_t idTeam;
 String NomeTopicoReceber;
@@ -76,7 +82,10 @@ char atualizartopico[15];
 char payload[100];
 char nomepeq[10]= "a";
 char nomefull[100];
-/************    APIS */
+
+
+
+/************APIS ********************************/
 
 char* GetWatchById_host = "http://10.57.16.40/JITAPI/Smartwatch/GetByIP/";
 char GetWatchById_Url[50] = {0};
@@ -791,15 +800,21 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lbl_btn_config = lv_label_create(btn_config, NULL);
     lv_label_set_text(lbl_btn_config, LV_SYMBOL_SETTINGS);
     // lv_obj_set_event_cb(btn_config, pub_mqtt);
+    
+    client.setServer(mqtt_server, 1883);
+    client.setCallback(callback);
+   
+  //---- Task para Monitoração da Conexão MQTT
+    xTaskCreatePinnedToCore(  Check_MQTT_Task,     /* Function to implement the task */
+                              "Mqtt CheckTask",   /* Name of the task */
+                              3000,             /* Stack size in words */
+                              NULL,             /* Task input parameter */
+                              1,                /* Priority of the task */
+                              &_mqttCheck_Task,   /* Task handle. */
+                              0 );
+    //vTaskSuspend( _mqttCheck_Task );
 
 
-  
-
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
-  
-
-  
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_event_cb, "jitsupport app loop" );
 
 }
@@ -837,55 +852,118 @@ void newticket(JsonObject jsonObj){
 }
 
 
-
-void reconnect() {
-
-  uint8_t ct_tentative =0;
-  // Loop until we're reconnected
-    
-    Serial.print("Attempting MQTT connection...");
+void mqtt_reconnect()
+{  
     // Attempt to connect
-    if (client.connect(ip_address)) {
-      Serial.println("connected");
-      if(!(pegueiUser)){
-          getWatchUser();
-      }
-      
-      // Subscribe
-      
-      client.subscribe(nometopico);
-      client.subscribe(atualizartopico);
-      client.subscribe("ttwatch");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 1 seconds");
-      // Wait 5 seconds before retrying
-      delay(1000);
+    if(!client.connected()){
+        Serial.print("MQTT reconnection...");
+        
+        if (client.connect(ip_address)){
+          Serial.println("connected");
+          
+          if(!(pegueiUser)){
+              getWatchUser();
+          } 
+
+          client.subscribe(nometopico);
+          client.subscribe(atualizartopico);
+          client.subscribe("ttwatch");
+        }
+        else  Serial.println("Failed !");
+    
     }
+}
+
+
+/* Possible values for client.state()
+ MQTT_CONNECTION_TIMEOUT     -4
+ MQTT_CONNECTION_LOST        -3
+ MQTT_CONNECT_FAILED         -2
+ MQTT_DISCONNECTED           -1
+ MQTT_CONNECTED               0
+ MQTT_CONNECT_BAD_PROTOCOL    1
+ MQTT_CONNECT_BAD_CLIENT_ID   2
+ MQTT_CONNECT_UNAVAILABLE     3
+ MQTT_CONNECT_BAD_CREDENTIALS 4
+ MQTT_CONNECT_UNAUTHORIZED    5
+*/
+
+void Check_MQTT_Task(void * pvParameters ){
+  
+    while (1) {    
+      switch(client.state()){ 
+        
+        case(MQTT_CONNECTED):
+
+           Serial.println("MQQT Connected!");// Do nothing
+        break;
+        case(MQTT_CONNECT_FAILED):
+
+           Serial.println("MQQT Conection Failed...");// Do nothing
+           mqtt_reconnect();
+        break;
+        case(MQTT_DISCONNECTED):
+            
+            Serial.println("MQQT Disconnected... ");// Do nothing
+            client.setServer(mqtt_server, 1883);
+            client.setCallback(callback);
+            client.connect("ESP32CLIENT");
+        break;
+
+        case(MQTT_CONNECTION_TIMEOUT):
+        Serial.println("MQQT timeout...");       
+        mqtt_reconnect();
+
+        break;
+
+        case(MQTT_CONNECTION_LOST):
+        Serial.println("MQQT lost connection..."); 
+        mqtt_reconnect();
+
+        break;     
+
+        default:
+        Serial.println("MQTT NOT TREATED STATE:");
+        Serial.println(client.state());   
+      }
+        vTaskDelay(CHECK_MQTT_CONNECTION_MILLI_SECONDS/ portTICK_PERIOD_MS );
+    } 
   }
 
 
-
 bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
-    // put your code her
-    static uint8_t ct_standyby=0;
-    static uint8_t ct_wakeup=0;
-    static uint8_t ct_silence_wakeup=0;
 
-    switch( event ) {
+    static uint8_t ct_standyby=0;
+    static uint16_t ct_wakeup=0;
+    static uint16_t ct_silence_wakeup=0;
+
+    switch(event) {
         case POWERMGM_STANDBY:  
-               Serial.print("POWERMGM_STANDBY");
+               
                 ct_standyby++;
-                if(ct_standyby%50==0){
-                  if (!client.connected()) reconnect();
+                if(ct_standyby%100==0){
+                  //Serial.print("POWERMGM_STANDBY:: Check MQTT Conection");
+                 // if (!client.connected()) reconnect();
                   } 
+
             break;
-        case POWERMGM_WAKEUP:    
-              Serial.print("POWERMGM_WAKEUP");            
+        case POWERMGM_WAKEUP:
+
+                ct_wakeup++;
+                if(ct_wakeup%20000==0){
+                 // Serial.print("POWERMGM_WAKEUP:: Check MQTT Conection");
+                 // if (!client.connected()) reconnect();
+                  } 
+       
             break;
-        case POWERMGM_SILENCE_WAKEUP:     
-              Serial.print("POWERMGM_SILENCE_WAKEUP");           
+        case POWERMGM_SILENCE_WAKEUP:
+                
+                ct_silence_wakeup++;
+                if(ct_silence_wakeup%20000==0){
+                  //Serial.print("POWERMGM_SILENCE_WAKEUP:: Check MQTT Conection");
+                 // if (!client.connected()) reconnect();
+                  }   
+        
             break;
     }
 

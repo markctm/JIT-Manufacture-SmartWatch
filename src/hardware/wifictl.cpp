@@ -104,8 +104,8 @@ void wifictl_setup( void ) {
         else {
           wifictl_set_event( WIFICTL_SCAN );
           wifictl_send_event_cb( WIFICTL_DISCONNECT, (void *)"scan ..." );
-          // WiFi.scanNetworks();
-          WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+          WiFi.scanNetworks(true);
+          //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
         }
     }, WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
 
@@ -201,7 +201,13 @@ void wifictl_setup( void ) {
 
 bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
     bool retval = true;
-    
+
+    static uint16_t ct_standyby_wifi=0;
+    static uint16_t ct_wakeup_wifi=0;
+    static uint16_t ct_silence_wakeup_wifi=0;
+
+    //Serial.print("POWERMGM _ WIFI");
+    log_i("POWERMGM _ WIFI");
     switch( event ) {
       
         case POWERMGM_STANDBY:          
@@ -212,13 +218,38 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
                 log_w("standby blocked by \"enable on standby\" option");
                 retval = false;
               }
+
+              ct_standyby_wifi++;
+             // if(ct_standyby_wifi%30000==0){
+                 // log_i("POWERMGM_STANDBY:: SCAN FOR WIFI");
+                 // wifictl_set_event( WIFICTL_SCAN );
+             // } 
+
+              wifictl_wakeup();
              break;
 
-        case POWERMGM_WAKEUP:    
+        case POWERMGM_WAKEUP:
+             
+              ct_wakeup_wifi++;
+              //if(ct_wakeup_wifi%30000==0){
+                  log_i("POWERMGM_WAKEUP:: SCAN FOR WIFI");
+                  wifictl_set_event( WIFICTL_SCAN );
+              //} 
+
+
               wifictl_wakeup();
               break;
 
-        case POWERMGM_SILENCE_WAKEUP:   
+        case POWERMGM_SILENCE_WAKEUP:
+                
+              ct_silence_wakeup_wifi++;
+              //if(ct_silence_wakeup_wifi%30000==0){
+                  log_i("POWERMGM_SILENCE_WAKEUP:: SCAN FOR WIFI");
+                  wifictl_set_event( WIFICTL_SCAN );
+              //} 
+
+
+
               wifictl_wakeup();
               break;
     }
@@ -378,6 +409,9 @@ bool wifictl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const 
 bool wifictl_send_event_cb( EventBits_t event, void *arg ) {
     return( callback_send( wifictl_callback, event, arg ) );
 }
+
+
+
 
 bool wifictl_is_known( const char* networkname ) {
   if ( wifi_init == false )
