@@ -853,23 +853,25 @@ void newticket(JsonObject jsonObj){
 
 
 void mqtt_reconnect()
-{
-    // Loop until we're reconnected  
-      Serial.print("MQTT reconnection...");
+{  
     // Attempt to connect
-    if (client.connect(ip_address)){
-      Serial.println("connected");
-      
-      if(!(pegueiUser)){
-          getWatchUser();
-      } 
+    if(!client.connected()){
+        Serial.print("MQTT reconnection...");
+        
+        if (client.connect(ip_address)){
+          Serial.println("connected");
+          
+          if(!(pegueiUser)){
+              getWatchUser();
+          } 
 
-      client.subscribe(nometopico);
-      client.subscribe(atualizartopico);
-      client.subscribe("ttwatch");
+          client.subscribe(nometopico);
+          client.subscribe(atualizartopico);
+          client.subscribe("ttwatch");
+        }
+        else  Serial.println("Failed !");
+    
     }
-    else  Serial.println("Failed !");
-      
 }
 
 
