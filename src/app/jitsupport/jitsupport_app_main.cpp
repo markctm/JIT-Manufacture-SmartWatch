@@ -286,7 +286,18 @@ void getWatchUser(){
     int err = 0;
     
 
-       
+                String numerotopico = String("126");    
+                
+                NomeTopicoReceber = "receber/" + numerotopico;
+                NomeTopicoAtualizar = "atualizar/" + numerotopico;
+  
+                NomeTopicoReceber.toCharArray(nometopico,15);
+                NomeTopicoAtualizar.toCharArray(atualizartopico,15);
+
+                client.subscribe(nometopico);
+               client.subscribe(atualizartopico);
+
+
         http.begin(GetWatchById_Url); //HTTP
       //  http.begin("http://192.168.0.8:3000/watch");
 
@@ -309,9 +320,16 @@ void getWatchUser(){
                 idTeam = result["teamId"];
                 Serial.println("ID do time getwatch:");
                 Serial.println(idTeam);
-                String numerotopico = String(idTeam);
+                
+                
+                String numerotopico = String("126");
+                //String numerotopico = String(idTeam);
+              
+                
+                
                 NomeTopicoReceber = "receber/" + numerotopico;
                 NomeTopicoAtualizar = "atualizar/" + numerotopico;
+                
                 Serial.println("Nome Topico Receber:");
                 Serial.println(NomeTopicoReceber);
                 Serial.println("Nome Topico Atualizar:");

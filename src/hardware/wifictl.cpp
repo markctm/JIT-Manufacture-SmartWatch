@@ -104,8 +104,8 @@ void wifictl_setup( void ) {
         else {
           wifictl_set_event( WIFICTL_SCAN );
           wifictl_send_event_cb( WIFICTL_DISCONNECT, (void *)"scan ..." );
-          WiFi.scanNetworks(true);
-          //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+          //WiFi.scanNetworks(true);
+          WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
         }
     }, WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
 
@@ -119,7 +119,7 @@ void wifictl_setup( void ) {
               wifiname = wifictl_networklist[ entry ].ssid;
               wifipassword = wifictl_networklist[ entry ].password;
               wifictl_send_event_cb( WIFICTL_SCAN, (void *)"connecting ..." );
-              WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+              //WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
               return;
             }
           }
@@ -157,7 +157,8 @@ void wifictl_setup( void ) {
         else {
           wifictl_set_event( WIFICTL_SCAN );
           wifictl_send_event_cb( WIFICTL_ON, (void *)"scan ..." );
-          WiFi.scanNetworks();
+          //WiFi.scanNetworks();
+          WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
         }
     }, WiFiEvent_t::SYSTEM_EVENT_WIFI_READY );
 
@@ -202,9 +203,9 @@ void wifictl_setup( void ) {
 bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
     bool retval = true;
 
-    static uint16_t ct_standyby_wifi=0;
-    static uint16_t ct_wakeup_wifi=0;
-    static uint16_t ct_silence_wakeup_wifi=0;
+    static uint8_t ct_standyby_wifi=0;
+    static uint8_t ct_wakeup_wifi=0;
+    static uint8_t ct_silence_wakeup_wifi=0;
 
     //Serial.print("POWERMGM _ WIFI");
     log_i("POWERMGM _ WIFI");
@@ -225,7 +226,7 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
                  // wifictl_set_event( WIFICTL_SCAN );
              // } 
 
-              wifictl_wakeup();
+              //wifictl_wakeup();
              break;
 
         case POWERMGM_WAKEUP:
@@ -247,9 +248,6 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
                   log_i("POWERMGM_SILENCE_WAKEUP:: SCAN FOR WIFI");
                   wifictl_set_event( WIFICTL_SCAN );
               //} 
-
-
-
               wifictl_wakeup();
               break;
     }

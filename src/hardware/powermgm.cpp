@@ -59,7 +59,7 @@ void powermgm_setup( void ) {
     wifictl_setup();
     touch_setup();
     timesync_setup();
-    rtcctl_setup();
+    //rtcctl_setup();
     //blectl_read_config();
     sound_read_config();
     
