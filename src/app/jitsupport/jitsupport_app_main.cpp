@@ -281,23 +281,9 @@ void getWatchUser(){
     
     Serial.print("############ENDEREÇO DE API:");
     Serial.println(GetWatchById_Url);
-
-    
-    int err = 0;
-    
-
-                String numerotopico = String("126");    
-                
-                NomeTopicoReceber = "receber/" + numerotopico;
-                NomeTopicoAtualizar = "atualizar/" + numerotopico;
   
-                NomeTopicoReceber.toCharArray(nometopico,15);
-                NomeTopicoAtualizar.toCharArray(atualizartopico,15);
-
-                client.subscribe(nometopico);
-               client.subscribe(atualizartopico);
-
-
+    int err = 0;
+  
         http.begin(GetWatchById_Url); //HTTP
       //  http.begin("http://192.168.0.8:3000/watch");
 
@@ -321,11 +307,8 @@ void getWatchUser(){
                 Serial.println("ID do time getwatch:");
                 Serial.println(idTeam);
                 
-                
-                String numerotopico = String("126");
-                //String numerotopico = String(idTeam);
               
-                
+                String numerotopico = String(idTeam);            
                 
                 NomeTopicoReceber = "receber/" + numerotopico;
                 NomeTopicoAtualizar = "atualizar/" + numerotopico;
@@ -417,192 +400,177 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
 };
 
 
-  void callback(char* topic, byte* message, unsigned int length) {
+void callback(char* topic, byte* message, unsigned int length) {
+  
   Serial.print("Message arrived on topic: ");
   Serial.print(topic);
   Serial.print(". Message: ");
-  String messageTemp;
-  
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)message[i]);
-    messageTemp += (char)message[i];
-  }
-  Serial.println();
- Serial.println("O QUE CHEGOU AQUI FOI");
-Serial.println(messageTemp);
+ 
 
+  //-----Trata Mensagem do Tópico
+  
+  char messageTemp[length];
+  for (int i = 0; i < length; i++) {
+    messageTemp[i] = *message;
+    message++;
+    
+  }
+
+  Serial.println();
+  Serial.println("O QUE CHEGOU AQUI FOI");
+  Serial.println(messageTemp);
+
+
+  //------- JSON DOC------------
   StaticJsonDocument<200> result;
   deserializeJson(result, messageTemp);
+  JsonObject object = result.as<JsonObject>();
+  if(object.isNull()==false)
+  {
+      // OK VALID JSON ! 
+        
+      if (String(topic) == NomeTopicoReceber) {
+          Serial.println("RECEBERCHAMADO *****************");         
+          auto id = result["id"].as<const char*>();
+          Serial.println(id);
+          auto workstation = result["workstation"].as<const char*>();
+          Serial.println(workstation);
+          auto risk = result["risk"].as<const char*>();
+          Serial.println(risk);
+          auto calltime = result["calltime"].as<const char*>();
+          Serial.println(calltime);
+          auto description = result["description"].as<const char*>();
+          Serial.println(description);
+          Serial.println("VALOR DO COUNTER EH:");
+          Serial.println(counter);
+      
+          if(!(counter==num_tickets)){
 
-if (String(topic) == NomeTopicoReceber) {
-    Serial.println("RECEBERCHAMADO *****************");
-    
-    auto id = result["id"].as<const char*>();
-    Serial.println(id);
-    auto workstation = result["workstation"].as<const char*>();
-    Serial.println(workstation);
-    auto risk = result["risk"].as<const char*>();
-    Serial.println(risk);
-    auto calltime = result["calltime"].as<const char*>();
-    Serial.println(calltime);
-    auto description = result["description"].as<const char*>();
-    Serial.println(description);
-
-  Serial.println("VALOR DO COUNTER EH:");
-  Serial.println(counter);
-    if(!(counter==num_tickets)){
-
-            //   if(BLisOn){
+              strcpy(chamados[(counter*num_tickets)+0],workstation);
+              strcpy(chamados[(counter*num_tickets)+1],risk);
               
+              Serial.println("TESTE DO RISCO");
+
+              Serial.print("Bool 1:");
+              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1")==0);
+              Serial.print("Bool 2:");
+              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0")==0);
+              Serial.print("Bool 3:");
+              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
+              Serial.print("Bool 4:");
+
+              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+              if(strcmp(chamados[(counter*num_tickets)+1],"1")==0){
+                sprintf(chamados[(counter*num_tickets)+1],"Rodando");
+                Serial.println("Linha rodando");
+              }
+              else if(strcmp(chamados[(counter*num_tickets)+1],"0")==0){
+                Serial.println("Linha parada");
+                sprintf(chamados[(counter*num_tickets)+1],"Parada");
+              }
+
+              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
+              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+              strcpy(chamados[(counter*num_tickets)+2],calltime);
+              strcpy(chamados[(counter*num_tickets)+3],description); 
+              strcpy(chamados[(counter*num_tickets)+4],id);
+              strcpy(chamados[(counter*num_tickets)+5],"Open");
+              strcpy(chamados[(counter*num_tickets)+6],"");
+              counter = counter +1;
+              atual = counter;
+              printCard(counter-1);          
+              toggle_Cards_On();
+                          
+                  // twatch->motor->onec();
+            }
+       } // if String(topic) == NomeTopicoReceber)
+
+      else if(String(topic) == NomeTopicoAtualizar){
+      
+          Serial.print("ATUALIZAR CHAMADO ************");
+            // if(BLisOn){
+                
             //   }
             //   else{
             //     ttgo->openBL();
             //     BLisOn = true;
             //   }
             // ttgo->motor->onec();
-              strcpy(chamados[(counter*num_tickets)+0],workstation);
-            
 
-            strcpy(chamados[(counter*num_tickets)+1],risk);
-            Serial.println("TESTE DO RISCO");
+            char idbuscado [3];
+            char userbuscado [20];
+            char statusbuscado [20];
             
+            strcpy(idbuscado,result["TicketId"]);
+            Serial.print("ID RECEBIDA:");
+            Serial.println(idbuscado);
+            
+            
+            Serial.println("USUARIO RECEBIDO");
+            
+            strcpy(userbuscado,result["UserName"]);
+            Serial.println(userbuscado);
+            
+            for(int z=0;z<10;z++){
+              
+              Serial.println(userbuscado[z]);
 
-            Serial.print("Bool 1:");
-            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1")==0);
-            Serial.print("Bool 2:");
-            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0")==0);
-            Serial.print("Bool 3:");
-            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
-            Serial.print("Bool 4:");
-            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
-            if(strcmp(chamados[(counter*num_tickets)+1],"1")==0){
-              sprintf(chamados[(counter*num_tickets)+1],"Rodando");
-              Serial.println("Linha rodando");
+              if(isWhitespace(userbuscado[z])) break;            
+              else nomepeq[z]=userbuscado[z];         
             }
-            else if(strcmp(chamados[(counter*num_tickets)+1],"0")==0){
-              Serial.println("Linha parada");
-              sprintf(chamados[(counter*num_tickets)+1],"Parada");
-            }
-            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
-            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
-            strcpy(chamados[(counter*num_tickets)+2],calltime);
 
-            strcpy(chamados[(counter*num_tickets)+3],description);
-          
-            strcpy(chamados[(counter*num_tickets)+4],id);
-            strcpy(chamados[(counter*num_tickets)+5],"Open");
-            strcpy(chamados[(counter*num_tickets)+6],"");
-            counter = counter +1;
-            atual = counter;
-            printCard(counter-1);
-            
-            toggle_Cards_On();
-            
-            
-            // twatch->motor->onec();
-            }
-  }
-else if(String(topic) == NomeTopicoAtualizar) {
-    Serial.print("ATUALIZAR CHAMADO ************");
-
-
-        // if(BLisOn){
-            
-        //   }
-        //   else{
-        //     ttgo->openBL();
-        //     BLisOn = true;
-        //   }
-        // ttgo->motor->onec();
-
-        char idbuscado [3];
-         char userbuscado [20];
-         char statusbuscado [20];
-         
-        strcpy(idbuscado,result["TicketId"]);
-        Serial.print("ID RECEBIDA:");
-        Serial.println(idbuscado);
-        
-        
-        Serial.println("USUARIO RECEBIDO");
-        
-        strcpy(userbuscado,result["UserName"]);
-        Serial.println(userbuscado);
-        for(int z=0;z<10;z++){
-          Serial.println(userbuscado[z]);
-          
-          if(isWhitespace(userbuscado[z])) {
-            
-            break;
-          }
-          else{
-            nomepeq[z]=userbuscado[z];
-
-          }
-        }
-         Serial.println("USUARIO trim");
-         Serial.println(nomepeq);
-        String stats = result["Status"];
-        stats.toCharArray(statusbuscado,20);
-        Serial.println("STATUS RECEBIDO");
-        Serial.println(stats);
-        Serial.println(statusbuscado);
+            Serial.println("USUARIO trim");
+            Serial.println(nomepeq);
+            String stats = result["Status"];
+            stats.toCharArray(statusbuscado,20);
+            Serial.println("STATUS RECEBIDO");
+            Serial.println(stats);
+            Serial.println(statusbuscado);
         
 
-        Serial.print("Counter: ");
-        Serial.println(counter);
-        for (int i = 4; i <= ((counter*num_tickets)-3); i=i+num_tickets) {
-        Serial.print("i: ");
-        Serial.println(i);
+            Serial.print("Counter: ");
+            Serial.println(counter);
 
-        Serial.print("Ids: ");
-        Serial.println(chamados[i]);
+            for (int i = 4; i <= ((counter*num_tickets)-3); i=i+num_tickets)
+            {
+              Serial.print("i: ");
+              Serial.println(i);
 
-           if(strcmp(chamados[i], idbuscado)==0){
+              Serial.print("Ids: ");
+              Serial.println(chamados[i]);
 
-            Serial.println("Achei meu chamado buscado");
-            strcpy(chamados[i+1],statusbuscado);
-            strcpy(chamados[i+2],nomepeq);
-            Serial.println(chamados[i-4]);
-            Serial.println(chamados[i-3]);
-            Serial.println(chamados[i-2]);
-            Serial.println(chamados[i-1]);
-            Serial.println(chamados[i]);
-            Serial.println(chamados[i+1]);
-            Serial.println(chamados[i+2]);
-            atual=((i-4)/num_tickets)+1;
-            printCard(atual-1);
-            if(strcmp(statusbuscado,"Done")==0){
-              Serial.println("SIM, O STATUS EH DONE!!!!!!!");
-              removefromArray(btn2,LV_EVENT_CLICKED);
+              if(strcmp(chamados[i], idbuscado)==0){
+
+                Serial.println("Achei meu chamado buscado");
+                strcpy(chamados[i+1],statusbuscado);
+                strcpy(chamados[i+2],nomepeq);
+                Serial.println(chamados[i-4]);
+                Serial.println(chamados[i-3]);
+                Serial.println(chamados[i-2]);
+                Serial.println(chamados[i-1]);
+                Serial.println(chamados[i]);
+                Serial.println(chamados[i+1]);
+                Serial.println(chamados[i+2]);
+                atual=((i-4)/num_tickets)+1;
+                printCard(atual-1);
+
+                if(strcmp(statusbuscado,"Done")==0){
+                  Serial.println("SIM, O STATUS EH DONE!!!!!!!");
+                  removefromArray(btn2,LV_EVENT_CLICKED);
+                }
+                      
+              break;
+              }
             }
-            
-            break;
-           }
-        }
-         
-        // twatch->motor->onec();
-    
-  }
+        }                    // twatch->motor->onec();         
+    }
+    else
+    {
+        //NOT VALID JSON MESSAGE !! 
+        Serial.println("Not a Valid Json Message");
+    }
  
 }
-// void callback(char* topic, byte* message, unsigned int length) {
-//   Serial.print("Message arrived on topic: ");
-//   Serial.print(topic);
-//   Serial.print(". Message: ");
-//   String messageTemp;
-  
-//   for (int i = 0; i < length; i++) {
-//     Serial.print((char)message[i]);
-//     messageTemp += (char)message[i];
-//   }
-//   Serial.println();
-
-//   if (String(topic) == "esp32/output") {
-
-//   }
-// }
-
 
 
 void jitsupport_app_main_setup( uint32_t tile_num ) {

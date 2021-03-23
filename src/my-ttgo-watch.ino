@@ -103,7 +103,7 @@ void setup()
 
     if ( wifictl_get_autoon() && ( pmu_is_charging() || pmu_is_vbus_plug() || ( pmu_get_battery_voltage() > 3400) ) )
         Serial.print("Wifi wifictl_on Called");
-        //wifictl_on();
+        wifictl_on();
 
     heap_caps_malloc_extmem_enable( 16*1024 );
     //blectl_setup();
