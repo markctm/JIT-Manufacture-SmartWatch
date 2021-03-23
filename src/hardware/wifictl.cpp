@@ -185,6 +185,10 @@ void wifictl_setup( void ) {
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
       esp_wifi_wps_disable();
       wifictl_send_event_cb( WIFICTL_WPS_SUCCESS, (void *)"wps timeout" );
+
+      powermgm_set_event( POWERMGM_WAKEUP );
+      //powermgm_send_event_cb( POWERMGM_WAKEUP );
+
     }, WiFiEvent_t::SYSTEM_EVENT_STA_WPS_ER_TIMEOUT );
 
     xTaskCreatePinnedToCore(  wifictl_Task,     /* Function to implement the task */

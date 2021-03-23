@@ -791,13 +791,13 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     client.setCallback(callback);
    
   //---- Task para Monitoração da Conexão MQTT
-    xTaskCreatePinnedToCore(  Check_MQTT_Task,     /* Function to implement the task */
-                              "Mqtt CheckTask",   /* Name of the task */
-                              3000,             /* Stack size in words */
-                              NULL,             /* Task input parameter */
-                              1,                /* Priority of the task */
-                              &_mqttCheck_Task,   /* Task handle. */
-                              0 );
+  //   xTaskCreatePinnedToCore(  Check_MQTT_Task,     /* Function to implement the task */
+  //                           "Mqtt CheckTask",   /* Name of the task */
+  //                         3000,             /* Stack size in words */
+  //                       NULL,             /* Task input parameter */
+         //                     1,                /* Priority of the task */
+           //                   &_mqttCheck_Task,   /* Task handle. */
+             //                 0 );
     //vTaskSuspend( _mqttCheck_Task );
 
 
