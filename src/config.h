@@ -55,11 +55,21 @@
 #define WIFI_PASSWORD     "g4keKDI2RkXQT"
 
 
+
+
+
+
+//-----------Global---------
+
+
+extern int wifi_connected;
+
+
 //------MQTT---CONNECTION------
 
-#define MQTT_SERVER                             "test.mosquitto.org"
-#define CHECK_MQTT_CONNECTION_MILLI_SECONDS       4000
-
+#define MQTT_SERVER                                 "test.mosquitto.org"
+#define CHECK_MQTT_CONNECTION_MILLI_SECONDS          4000
+#define WIFI_TENTATIVES_TO_RECONNECT                10
 
  
 

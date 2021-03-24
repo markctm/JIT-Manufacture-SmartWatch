@@ -72,8 +72,6 @@ TaskHandle_t _mqttCheck_Task;
 void Check_MQTT_Task( void * pvParameters );
 
 
-
-
 uint8_t idTeam;
 String NomeTopicoReceber;
 String NomeTopicoAtualizar;
@@ -877,7 +875,8 @@ void mqtt_reconnect()
 
 void Check_MQTT_Task(void * pvParameters ){
   
-    while (1) {    
+    while (1) {
+
       switch(client.state()){ 
         
         case(MQTT_CONNECTED):
@@ -888,13 +887,13 @@ void Check_MQTT_Task(void * pvParameters ){
         break;
         case(MQTT_CONNECT_FAILED):
 
-           Serial.println("MQQT Conection Failed...");// Do nothing
+           Serial.println("MQQT Conection Failed...");
            mqtt_reconnect();
         break;
         case(MQTT_DISCONNECTED):
             
-            Serial.println("MQQT Disconnected... ");// Do nothing
-            client.setServer(mqtt_server, 1883);
+            Serial.println("MQQT Disconnected... ");
+            
             client.setCallback(callback);
             client.connect("ESP32CLIENT");
         break;
@@ -933,7 +932,9 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                 if(ct_standyby%100==0){
                   //Serial.print("POWERMGM_STANDBY:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
-                  } 
+                  }
+
+                  if(wifi_connected) vTaskResume( _mqttCheck_Task );
 
             break;
         case POWERMGM_WAKEUP:
@@ -943,7 +944,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                  // Serial.print("POWERMGM_WAKEUP:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
                   } 
-                  vTaskResume( _mqttCheck_Task );
+                  if(wifi_connected) vTaskResume( _mqttCheck_Task );
             break;
         case POWERMGM_SILENCE_WAKEUP:
                 
@@ -952,11 +953,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                   //Serial.print("POWERMGM_SILENCE_WAKEUP:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
                   }   
-                vTaskResume( _mqttCheck_Task );
-
-
-
-                
+               if(wifi_connected) vTaskResume( _mqttCheck_Task );             
                     
             break;
     }
