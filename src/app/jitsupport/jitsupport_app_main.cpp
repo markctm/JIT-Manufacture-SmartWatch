@@ -185,7 +185,7 @@ void printCard(uint8_t posic){
     lv_label_set_text(lbl_totalcard,buftotal);
 
     powermgm_set_event(POWERMGM_WAKEUP_REQUEST);
-    motor_vibe(100);       
+    motor_vibe(70);       
     mainbar_jump_to_tilenumber( jitsupport_app_get_app_main_tile_num(), LV_ANIM_OFF );
     statusbar_hide(true);
 }
@@ -487,9 +487,10 @@ void callback(char* topic, byte* message, unsigned int length) {
 
       else if(String(topic) == NomeTopicoAtualizar){
       
-          Serial.print("ATUALIZAR CHAMADO ************");
-            // if(BLisOn){
-                
+            Serial.print("ATUALIZAR CHAMADO ************");
+            
+            
+            // if(BLisOn){          
             //   }
             //   else{
             //     ttgo->openBL();
@@ -882,6 +883,8 @@ void Check_MQTT_Task(void * pvParameters ){
         case(MQTT_CONNECTED):
 
            Serial.println("MQQT Connected!");// Do nothing
+           vTaskSuspend( _mqttCheck_Task );
+
         break;
         case(MQTT_CONNECT_FAILED):
 
@@ -940,7 +943,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                  // Serial.print("POWERMGM_WAKEUP:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
                   } 
-       
+                  vTaskResume( _mqttCheck_Task );
             break;
         case POWERMGM_SILENCE_WAKEUP:
                 
@@ -949,7 +952,12 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                   //Serial.print("POWERMGM_SILENCE_WAKEUP:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
                   }   
-        
+                vTaskResume( _mqttCheck_Task );
+
+
+
+                
+                    
             break;
     }
 
