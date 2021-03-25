@@ -297,13 +297,11 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
                 retval = false;
               }
                 
-
              break;
 
         case POWERMGM_WAKEUP:
              
               wifictl_wakeup();
-
               log_i("POWERMGM_WAKEUP");
               break;
 

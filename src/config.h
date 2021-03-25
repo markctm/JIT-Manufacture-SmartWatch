@@ -30,8 +30,8 @@
     /*
     * Built-in applications
     */
-    #define ENABLE_WEBSERVER  // To disable built-in webserver, comment this line
-    #define ENABLE_FTPSERVER  // To disable built-in ftpserver, comment this line
+    //#define ENABLE_WEBSERVER  // To disable built-in webserver, comment this line
+    //#define ENABLE_FTPSERVER  // To disable built-in ftpserver, comment this line
 
     /*
     * Enable non-latin languages support:
@@ -42,18 +42,6 @@
     * Firmware version string
     */
     #define __FIRMWARE__            "TT_WATCH_JABIL"
-
-
-//-----WIFI--AUTHENTICATION---
-//#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
-//#define WIFI_PASSWORD     "3617970200"
-
-// #define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
-// #define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
-
-#define WIFI_SSID         "JAB_RASP0001"
-#define WIFI_PASSWORD     "g4keKDI2RkXQT"
-
 
 
 
@@ -69,9 +57,43 @@ extern int wifi_connected;
 
 #define MQTT_SERVER                                 "test.mosquitto.org"
 #define CHECK_MQTT_CONNECTION_MILLI_SECONDS          4000
-#define WIFI_TENTATIVES_TO_RECONNECT                10
+#define WIFI_TENTATIVES_TO_RECONNECT                 20
 
  
+//-----WIFI--AUTHENTICATION---
+//#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
+//#define WIFI_PASSWORD     "3617970200"
+
+// #define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
+// #define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
+
+#define WIFI_SSID         "JAB_RASP0001"
+#define WIFI_PASSWORD     "g4keKDI2RkXQT"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifdef __cplusplus // Allows to include config.h from C code
     #include <LilyGoWatch.h>

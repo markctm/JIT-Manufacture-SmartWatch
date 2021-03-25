@@ -144,24 +144,19 @@ static lv_obj_t * btn_config;
 
 static void exit_jitsupport_app_main_event_cb( lv_obj_t * obj, lv_event_t event );
 
-
 void jitsupport_app_task( lv_task_t * task );
-
-
-
-
 void printCard(uint8_t posic){
 
 
     lv_obj_set_hidden(bg_card, true); 
 
     if(strcmp(chamados[(posic*num_tickets)+5],"Open")==0){
-      // Serial.println("mostrei o botao");
+      // log_i("mostrei o botao");
       lv_obj_set_hidden(btn1, false); 
       
     }
     else{
-      // Serial.println("escondi o botao");
+      // log_i("escondi o botao");
       lv_obj_set_hidden(btn1, true);
       
     }
@@ -173,9 +168,9 @@ void printCard(uint8_t posic){
     lv_label_set_text(lbl_status,chamados[(posic*num_tickets)+5]);
     lv_label_set_text(lbl_user,chamados[(posic*num_tickets)+6]);
 
-    Serial.print(atual);
-    Serial.print("/");
-    Serial.print(counter);
+    log_i("%d",atual);
+    log_i("/");
+    log_i("%d",counter);
   
     sprintf (bufatual, "%d",atual);
     sprintf (buftotal, "%d",counter);
@@ -191,7 +186,7 @@ void printCard(uint8_t posic){
 static void pub_mqtt(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_CLICKED) {
-        Serial.println("Mqtt publish \n");
+        log_i("Mqtt publish \n");
       client.publish("esp32/output", "***** sending test message******");
 
     } 
@@ -201,14 +196,14 @@ static void pub_mqtt(lv_obj_t *obj, lv_event_t event)
 static void btn1_handler(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_CLICKED && atual >1) {
-        Serial.println("Clicked\n");
+        log_i("Clicked\n");
     
     atual = atual-1;
-   Serial.println("back");
-  Serial.println();
-  Serial.print(atual);
-  Serial.print("/");
-  Serial.print(counter);
+   log_i("back");
+  log_i();
+  log_i("%d",atual);
+  log_i("/");
+  log_i("%d",counter);
 
     printCard(atual-1);
     } 
@@ -217,14 +212,14 @@ static void btn1_handler(lv_obj_t *obj, lv_event_t event)
 static void btn2_handler(lv_obj_t *obj, lv_event_t event)
 {
      if (event == LV_EVENT_CLICKED && atual < counter) {
-        Serial.println("Clicked\n");
+        log_i("Clicked\n");
     
     atual = atual+1;
-    Serial.println("next");
-  Serial.println();
-  Serial.print(atual);
-  Serial.print("/");
-  Serial.print(counter);
+    log_i("next");
+  log_i();
+  log_i("%d",atual);
+  log_i("/");
+  log_i("%d",counter);
 
     printCard(atual-1);
     }
@@ -246,8 +241,8 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
      lv_obj_set_hidden(btn1, true);
     StaticJsonDocument<200> doc2;
 
-      Serial.println("ESTE AQUI EH NOME ATUAL:");
-      Serial.println(nomefull);
+      log_i("ESTE AQUI EH NOME ATUAL:");
+      log_i("%s",nomefull);
       doc2["TicketId"] = chamados[((atual-1)*num_tickets)+4];
       doc2["UserName"] = nomefull;
       doc2["Status"] = "Accepted";
@@ -255,8 +250,8 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
       String requestBody;
       serializeJson(doc2, requestBody);
   
-      Serial.println("Request que vou fazer:");
-      Serial.println(requestBody);
+      log_i("Request que vou fazer:");
+      log_i("%s",requestBody);
       requestBody.toCharArray(payload,100);
       client.publish(atualizartopico, payload);
 
@@ -269,7 +264,7 @@ void getWatchUser(){
 
     meuip.toCharArray(ip_address,15);
 
-    Serial.print("MEU IP É O SEGUINTE:");
+    log_i("MEU IP É O SEGUINTE:");
     
     Serial.print(ip_address);
     lv_label_set_text(lbl_IP,ip_address);
@@ -277,8 +272,8 @@ void getWatchUser(){
     strcat(GetWatchById_Url, GetWatchById_host);
     strcat(GetWatchById_Url, ip_address);
     
-    Serial.print("############ENDEREÇO DE API:");
-    Serial.println(GetWatchById_Url);
+    log_i("############ENDEREÇO DE API:");
+    log_i("%s",GetWatchById_Url);
   
     int err = 0;
   
@@ -286,24 +281,24 @@ void getWatchUser(){
       //  http.begin("http://192.168.0.8:3000/watch");
 
         httpCode = http.GET();
-        Serial.println(httpCode);
+        log_i("%d",httpCode);
         if(httpCode > 0) {
 
           
             if(httpCode == HTTP_CODE_OK) {
                 String payload = http.getString();
-                Serial.println(payload);
+                log_i("%s",payload);
 
             
                 deserializeJson(result, payload);
 
 
                 deserializeJson(result, payload);
-                Serial.println(payload);
+                log_i("%s",payload);
 
                 idTeam = result["teamId"];
-                Serial.println("ID do time getwatch:");
-                Serial.println(idTeam);
+                log_i("ID do time getwatch:");
+                log_i("%d",idTeam);
                 
               
                 String numerotopico = String(idTeam);            
@@ -311,10 +306,10 @@ void getWatchUser(){
                 NomeTopicoReceber = "receber/" + numerotopico;
                 NomeTopicoAtualizar = "atualizar/" + numerotopico;
                 
-                Serial.println("Nome Topico Receber:");
-                Serial.println(NomeTopicoReceber);
-                Serial.println("Nome Topico Atualizar:");
-                Serial.println(NomeTopicoAtualizar);
+                log_i("Nome Topico Receber:");
+                log_i("%s",NomeTopicoReceber);
+                log_i("Nome Topico Atualizar:");
+                log_i("%s",NomeTopicoAtualizar);
                 NomeTopicoReceber.toCharArray(nometopico,15);
                 NomeTopicoAtualizar.toCharArray(atualizartopico,15);
 
@@ -322,14 +317,14 @@ void getWatchUser(){
               client.subscribe(atualizartopico);
 
                 auto user = result["user"].as<const char*>();
-                Serial.println(user);
+                log_i("%s",user);
                 StaticJsonDocument<256> userObj;
                 deserializeJson(userObj, user);
                 auto id = userObj[0]["id"].as<int>();
                 auto text = userObj[0]["text"].as<const char*>();
                 strcpy(nomefull,text);
-                Serial.println(id);
-                Serial.println(text);
+                log_i("%d",id);
+                log_i("%s",text);
                 lv_label_set_text(lbl_RSSI,text);
                 
                 
@@ -353,13 +348,13 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
     uint8_t i;
 
     Serial.print("Counter:");
-    Serial.println(counter);
+    log_i("%d",counter);
     Serial.print("Atual:");
-    Serial.println(atual);
+    log_i("%d",atual);
     Serial.print("Pos:");
-    Serial.println(pos);
+    log_i("%d",pos);
     Serial.print("Tam:");
-    Serial.println(tam);
+    log_i("%d",tam);
 
 
     for(i=pos; i<tam; i++)
@@ -378,20 +373,20 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
     counter--;
 
     Serial.print("Counter:");
-    Serial.println(counter);
+    log_i("%s",counter);
     Serial.print("Atual:");
-    Serial.println(atual);
+    log_i("%s",atual);
 
     if(atual==counter+1){
 
-      Serial.println("Atual = counter+1");
+      log_i("Atual = counter+1");
       atual = counter;
     }
 
     printCard(atual-1);
   }
   if(counter==0){
-      Serial.println("Counter=0");
+      log_i("Counter=0");
       toggle_Cards_Off();
   }
   
@@ -414,9 +409,9 @@ void callback(char* topic, byte* message, unsigned int length) {
     
   }
 
-  Serial.println();
-  Serial.println("O QUE CHEGOU AQUI FOI");
-  Serial.println(messageTemp);
+  log_i();
+  log_i("O QUE CHEGOU AQUI FOI");
+  log_i("%s",messageTemp);
 
 
   //------- JSON DOC------------
@@ -428,47 +423,49 @@ void callback(char* topic, byte* message, unsigned int length) {
       // OK VALID JSON ! 
         
       if (String(topic) == NomeTopicoReceber) {
-          Serial.println("RECEBERCHAMADO *****************");         
+          log_i("RECEBERCHAMADO *****************");         
           auto id = result["id"].as<const char*>();
-          Serial.println(id);
+          log_i("%s",id);
           auto workstation = result["workstation"].as<const char*>();
-          Serial.println(workstation);
+          log_i("%s",workstation);
           auto risk = result["risk"].as<const char*>();
-          Serial.println(risk);
+          log_i("%s",risk);
           auto calltime = result["calltime"].as<const char*>();
-          Serial.println(calltime);
+          log_i("%s",calltime);
           auto description = result["description"].as<const char*>();
-          Serial.println(description);
-          Serial.println("VALOR DO COUNTER EH:");
-          Serial.println(counter);
+          log_i("%s",description);
+          log_i("VALOR DO COUNTER EH:");
+          log_i("%d",counter);
       
           if(!(counter==num_tickets)){
 
               strcpy(chamados[(counter*num_tickets)+0],workstation);
               strcpy(chamados[(counter*num_tickets)+1],risk);
               
-              Serial.println("TESTE DO RISCO");
+              log_i("TESTE DO RISCO");
 
+              
               Serial.print("Bool 1:");
-              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1")==0);
+              log_i("%d",strcmp(chamados[(counter*num_tickets)+1],"1")==0);
               Serial.print("Bool 2:");
-              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0")==0);
+              log_i("%d",strcmp(chamados[(counter*num_tickets)+1],"0")==0);
               Serial.print("Bool 3:");
-              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
+              log_i("%d",strcmp(chamados[(counter*num_tickets)+1],"1"));
               Serial.print("Bool 4:");
+               
 
-              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+              log_i("%d",strcmp(chamados[(counter*num_tickets)+1],"0"));
               if(strcmp(chamados[(counter*num_tickets)+1],"1")==0){
                 sprintf(chamados[(counter*num_tickets)+1],"Rodando");
-                Serial.println("Linha rodando");
+                log_i("Linha rodando");
               }
               else if(strcmp(chamados[(counter*num_tickets)+1],"0")==0){
-                Serial.println("Linha parada");
+                log_i("Linha parada");
                 sprintf(chamados[(counter*num_tickets)+1],"Parada");
               }
 
-              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
-              Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+              log_i("%d",strcmp(chamados[(counter*num_tickets)+1],"1"));
+              log_i("%d",strcmp(chamados[(counter*num_tickets)+1],"0"));
               strcpy(chamados[(counter*num_tickets)+2],calltime);
               strcpy(chamados[(counter*num_tickets)+3],description); 
               strcpy(chamados[(counter*num_tickets)+4],id);
@@ -501,60 +498,60 @@ void callback(char* topic, byte* message, unsigned int length) {
             char statusbuscado [20];
             
             strcpy(idbuscado,result["TicketId"]);
-            Serial.print("ID RECEBIDA:");
-            Serial.println(idbuscado);
+            log_i("ID RECEBIDA:");
+            log_i("%s",idbuscado);
             
             
-            Serial.println("USUARIO RECEBIDO");
+            log_i("USUARIO RECEBIDO");
             
             strcpy(userbuscado,result["UserName"]);
-            Serial.println(userbuscado);
+            log_i("%s",userbuscado);
             
             for(int z=0;z<10;z++){
               
-              Serial.println(userbuscado[z]);
+              log_i("%s",userbuscado[z]);
 
               if(isWhitespace(userbuscado[z])) break;            
               else nomepeq[z]=userbuscado[z];         
             }
 
-            Serial.println("USUARIO trim");
-            Serial.println(nomepeq);
+            log_i("USUARIO trim");
+            log_i("%s",nomepeq);
             String stats = result["Status"];
             stats.toCharArray(statusbuscado,20);
-            Serial.println("STATUS RECEBIDO");
-            Serial.println(stats);
-            Serial.println(statusbuscado);
+            log_i("STATUS RECEBIDO");
+            log_i("%s",stats);
+            log_i("%s",statusbuscado);
         
 
-            Serial.print("Counter: ");
-            Serial.println(counter);
+     
+            log_i("Counter: %d",counter);
 
             for (int i = 4; i <= ((counter*num_tickets)-3); i=i+num_tickets)
             {
-              Serial.print("i: ");
-              Serial.println(i);
+              log_i("i: ");
+              log_i("%d",i);
 
-              Serial.print("Ids: ");
-              Serial.println(chamados[i]);
+              log_i("Ids: ");
+              log_i("%s",chamados[i]);
 
               if(strcmp(chamados[i], idbuscado)==0){
 
-                Serial.println("Achei meu chamado buscado");
+                log_i("Achei meu chamado buscado");
                 strcpy(chamados[i+1],statusbuscado);
                 strcpy(chamados[i+2],nomepeq);
-                Serial.println(chamados[i-4]);
-                Serial.println(chamados[i-3]);
-                Serial.println(chamados[i-2]);
-                Serial.println(chamados[i-1]);
-                Serial.println(chamados[i]);
-                Serial.println(chamados[i+1]);
-                Serial.println(chamados[i+2]);
+                log_i("%c",chamados[i-4]);
+                log_i("%c",chamados[i-3]);
+                log_i("%c",chamados[i-2]);
+                log_i("%c",chamados[i-1]);
+                log_i("%c",chamados[i]);
+                log_i("%c",chamados[i+1]);
+                log_i("%c",chamados[i+2]);
                 atual=((i-4)/num_tickets)+1;
                 printCard(atual-1);
 
                 if(strcmp(statusbuscado,"Done")==0){
-                  Serial.println("SIM, O STATUS EH DONE!!!!!!!");
+                  log_i("SIM, O STATUS EH DONE!!!!!!!");
                   removefromArray(btn2,LV_EVENT_CLICKED);
                 }
                       
@@ -566,7 +563,7 @@ void callback(char* topic, byte* message, unsigned int length) {
     else
     {
         //NOT VALID JSON MESSAGE !! 
-        Serial.println("Not a Valid Json Message");
+        log_i("Not a Valid Json Message");
     }
  
 }
@@ -841,11 +838,12 @@ void mqtt_reconnect()
 {  
     // Attempt to connect
     if(!client.connected()){
-        Serial.print("MQTT reconnection...");
-        
+     
+        log_i("MQTT reconnection...");
+
         if (client.connect(ip_address)){
-          Serial.println("connected");
-          
+          log_i("MQQT Connected");
+
           if(!(pegueiUser)){
               getWatchUser();
           } 
@@ -854,7 +852,7 @@ void mqtt_reconnect()
           client.subscribe(atualizartopico);
           client.subscribe("ttwatch");
         }
-        else  Serial.println("Failed !");
+        else  log_i("Failed !"); 
     
     }
 }
@@ -880,39 +878,42 @@ void Check_MQTT_Task(void * pvParameters ){
       switch(client.state()){ 
         
         case(MQTT_CONNECTED):
-
-           Serial.println("MQQT Connected!");// Do nothing
+                          
+           log_i("MQQT Connected!");
            vTaskSuspend( _mqttCheck_Task );
 
         break;
         case(MQTT_CONNECT_FAILED):
-
-           Serial.println("MQQT Conection Failed...");
+                     
+           log_i("MQQT Conection Failed...");
            mqtt_reconnect();
+
         break;
         case(MQTT_DISCONNECTED):
             
-            Serial.println("MQQT Disconnected... ");
-            
+            log_i("MQQT Disconnected... ");           
             client.setCallback(callback);
             client.connect("ESP32CLIENT");
+
         break;
 
         case(MQTT_CONNECTION_TIMEOUT):
-        Serial.println("MQQT timeout...");       
-        mqtt_reconnect();
+
+            log_i("MQQT timeout... ");         
+            mqtt_reconnect();
 
         break;
 
         case(MQTT_CONNECTION_LOST):
-        Serial.println("MQQT lost connection..."); 
-        mqtt_reconnect();
+     
+            log_i("MQQT lost connection... ");  
+            mqtt_reconnect();
 
         break;     
 
         default:
-        Serial.println("MQTT NOT TREATED STATE:");
-        Serial.println(client.state());   
+         log_i("MQTT NOT TREATED STATE:");  
+          log_i("%s",client.state());   
       }
         vTaskDelay(CHECK_MQTT_CONNECTION_MILLI_SECONDS/ portTICK_PERIOD_MS );
     } 
@@ -930,7 +931,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                
                 ct_standyby++;
                 if(ct_standyby%100==0){
-                  //Serial.print("POWERMGM_STANDBY:: Check MQTT Conection");
+                  //log_i("POWERMGM_STANDBY:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
                   }
 
@@ -941,7 +942,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
 
                 ct_wakeup++;
                 if(ct_wakeup%20000==0){
-                 // Serial.print("POWERMGM_WAKEUP:: Check MQTT Conection");
+                 // log_i("POWERMGM_WAKEUP:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
                   } 
                   if(wifi_connected) vTaskResume( _mqttCheck_Task );
@@ -950,7 +951,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                 
                 ct_silence_wakeup++;
                 if(ct_silence_wakeup%20000==0){
-                  //Serial.print("POWERMGM_SILENCE_WAKEUP:: Check MQTT Conection");
+                  //log_i("POWERMGM_SILENCE_WAKEUP:: Check MQTT Conection");
                  // if (!client.connected()) reconnect();
                   }   
                if(wifi_connected) vTaskResume( _mqttCheck_Task );             

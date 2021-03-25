@@ -94,7 +94,7 @@ void powermgm_loop( void ) {
         //Network transfer times are likely a greater time consumer than actual computational time
         if (powermgm_get_event( POWERMGM_SILENCE_WAKEUP_REQUEST ) ) {
             log_i("go silence wakeup");
-            setCpuFrequencyMhz(80);
+            setCpuFrequencyMhz(240);  //todo 
             powermgm_set_event( POWERMGM_SILENCE_WAKEUP );
             powermgm_send_event_cb( POWERMGM_SILENCE_WAKEUP );
         }
