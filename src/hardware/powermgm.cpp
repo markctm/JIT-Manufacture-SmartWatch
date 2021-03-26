@@ -47,6 +47,8 @@ portMUX_TYPE DRAM_ATTR powermgmMux = portMUX_INITIALIZER_UNLOCKED;
 callback_t *powermgm_callback = NULL;
 callback_t *powermgm_loop_callback = NULL;
 
+esp_pm_config_esp32_t pm_config;
+
 bool powermgm_send_event_cb( EventBits_t event );
 bool powermgm_send_loop_event_cb( EventBits_t event );
 
@@ -68,18 +70,16 @@ void powermgm_setup( void ) {
 
 void powermgm_loop( void ) {
     // check if a button or doubleclick was release
-    if( powermgm_get_event( POWERMGM_PMU_BUTTON | POWERMGM_BMA_DOUBLECLICK | POWERMGM_BMA_TILT | POWERMGM_RTC_ALARM ) ) {
+    if(powermgm_get_event( POWERMGM_PMU_BUTTON)) {
         if ( powermgm_get_event( POWERMGM_STANDBY ) || powermgm_get_event( POWERMGM_SILENCE_WAKEUP ) ) {
             Serial.println("LIGANDO POR BOTAO");
             powermgm_set_event( POWERMGM_WAKEUP_REQUEST);
         }
         else {
-            if ( powermgm_get_event( POWERMGM_PMU_BUTTON | POWERMGM_BMA_DOUBLECLICK ) ) {
-                Serial.println("DESLIGANDO POR BOTAO");
                 powermgm_set_event( POWERMGM_STANDBY_REQUEST );
-            }
         }
-        powermgm_clear_event( POWERMGM_PMU_BUTTON | POWERMGM_BMA_DOUBLECLICK  | POWERMGM_BMA_TILT | POWERMGM_RTC_ALARM );
+    
+        powermgm_clear_event( POWERMGM_PMU_BUTTON);
     }
 
     if ( powermgm_get_event(POWERMGM_WAKEUP_REQUEST ) && powermgm_get_event( POWERMGM_WAKEUP ) ) {
@@ -93,17 +93,31 @@ void powermgm_loop( void ) {
 
         //Network transfer times are likely a greater time consumer than actual computational time
         if (powermgm_get_event( POWERMGM_SILENCE_WAKEUP_REQUEST ) ) {
+            
             log_i("go silence wakeup");
-            setCpuFrequencyMhz(240);  //todo 
+                        /*
+             * set silence wakeup status/request and send events
+             */
+            powermgm_clear_event( POWERMGM_SILENCE_WAKEUP_REQUEST );
             powermgm_set_event( POWERMGM_SILENCE_WAKEUP );
             powermgm_send_event_cb( POWERMGM_SILENCE_WAKEUP );
+            /*
+             * set cpu speed
+             * 
+             * note:    CONFIG_PM_ENABLE comes from the arduino IDF and is only use when
+             *          an custom arduino in platformio.ini is set. Is CONFIG_PM_ENABLE is set, it enabled
+             *          extra features like dynamic frequency scaling. Otherwise normal arduino function
+             *          will be used.
+             */
+            
+            setCpuFrequencyMhz(80);  //todo 
         }
         else {
-            log_i("go wakeup");
-            setCpuFrequencyMhz(240);
+            
+            log_i("go wakeup");       
             powermgm_set_event( POWERMGM_WAKEUP );
             powermgm_send_event_cb( POWERMGM_WAKEUP );
-            motor_vibe(3);
+            setCpuFrequencyMhz(160);
         }
 
         log_i("Free heap: %d", ESP.getFreeHeap());
@@ -117,10 +131,11 @@ void powermgm_loop( void ) {
         bool noBuzz = powermgm_get_event( POWERMGM_SILENCE_WAKEUP | POWERMGM_SILENCE_WAKEUP_REQUEST );
         
         // send standby event
+        powermgm_clear_event( POWERMGM_STANDBY_REQUEST );
         powermgm_clear_event( POWERMGM_STANDBY | POWERMGM_SILENCE_WAKEUP | POWERMGM_WAKEUP );
         powermgm_set_event( POWERMGM_STANDBY );
 
-        adc_power_off();
+        //adc_power_off();
 
         if ( powermgm_send_event_cb( POWERMGM_STANDBY ) ) {
             if (!noBuzz) motor_vibe(3);  //Only buzz if a non silent wake was performed
@@ -139,12 +154,12 @@ void powermgm_loop( void ) {
             log_i("Free PSRAM heap: %d", ESP.getFreePsram());
             log_i("uptime: %d", millis() / 1000 );
             log_i("go standby blocked");
-            setCpuFrequencyMhz( 80 );
+            setCpuFrequencyMhz(80);
             // from here, the consumption is round about 23mA
             // total standby time is 19h without use?
         }
     }
-    powermgm_clear_event( POWERMGM_SILENCE_WAKEUP_REQUEST | POWERMGM_WAKEUP_REQUEST | POWERMGM_STANDBY_REQUEST );
+    //powermgm_clear_event( POWERMGM_SILENCE_WAKEUP_REQUEST | POWERMGM_WAKEUP_REQUEST | POWERMGM_STANDBY_REQUEST );
 
     // send loop event depending on powermem state
     if ( powermgm_get_event( POWERMGM_STANDBY ) ) {

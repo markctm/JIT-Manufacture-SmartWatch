@@ -276,11 +276,6 @@ void wifi_restablish_Task( void * pvParameters)
 bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
     bool retval = true;
 
-    static uint8_t ct_standyby_wifi=0;
-    static uint8_t ct_wakeup_wifi=0;
-    static uint8_t ct_silence_wakeup_wifi=0;
-
-    //Serial.print("POWERMGM _ WIFI");
     log_i("POWERMGM_WIFI");
     switch(event) {
       
@@ -306,7 +301,8 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
               break;
 
         case POWERMGM_SILENCE_WAKEUP:
-                
+              
+              ct_Wifi_retry= WIFI_TENTATIVES_TO_RECONNECT/2;
               wifictl_wakeup();
 
               log_i("POWERMGM_SILENCE_WAKEUP");

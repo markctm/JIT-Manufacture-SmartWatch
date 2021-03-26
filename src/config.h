@@ -79,22 +79,6 @@ extern int wifi_connected;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #ifdef __cplusplus // Allows to include config.h from C code
     #include <LilyGoWatch.h>
     #define _CONFIG_H 
