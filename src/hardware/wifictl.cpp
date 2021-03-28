@@ -50,6 +50,7 @@ callback_t *wifictl_callback = NULL;
 
 void wifictl_send_event_cb( EventBits_t event, char *msg );
 bool wifictl_powermgm_event_cb( EventBits_t event, void *arg );
+bool wifictl_powermgm_loop_event_cb( EventBits_t event, void *arg );
 
 void wifictl_StartTask( void );
 void wifictl_Task( void * pvParameters );
@@ -234,6 +235,7 @@ void wifictl_setup( void ) {
 
 
     powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_event_cb, "wifictl" );
+    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_loop_event_cb, "wifictl" );
 
     wifictl_set_event( WIFICTL_OFF );
 }
@@ -241,8 +243,7 @@ void wifictl_setup( void ) {
 
 void wifi_restablish_Task( void * pvParameters) 
 {
-   
-      
+    
       while(1)
       {
               if (WiFi.status() != WL_CONNECTED)
@@ -285,7 +286,9 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
               if(ct_Wifi_retry>WIFI_TENTATIVES_TO_RECONNECT)
               {            
                 log_i("NO_WIFI_GOTO_POWERMGM_STANDBY");
+
                 wifictl_standby();
+                
               }
               else {
                 log_w("standby blocked by \"enable on standby\" option");
@@ -297,12 +300,14 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
         case POWERMGM_WAKEUP:
              
               wifictl_wakeup();
+              vTaskResume(_wifi_restabilsh_Task);
+
               log_i("POWERMGM_WAKEUP");
               break;
 
         case POWERMGM_SILENCE_WAKEUP:
               
-              ct_Wifi_retry= WIFI_TENTATIVES_TO_RECONNECT/2;
+              //ct_Wifi_retry= WIFI_TENTATIVES_TO_RECONNECT/2;  Avaliar a necessidade de reteste no restabelecimento de conxeão 
               wifictl_wakeup();
 
               log_i("POWERMGM_SILENCE_WAKEUP");
@@ -312,6 +317,33 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
         break;
     }
     return( retval );
+}
+
+
+bool wifictl_powermgm_loop_event_cb( EventBits_t event, void *arg )
+{
+   
+    switch(event) {
+          case POWERMGM_STANDBY:
+
+              if(ct_Wifi_retry>WIFI_TENTATIVES_TO_RECONNECT)
+              {            
+                  // Ajuda no quesito Desligar o SCAN do wifi imediatamente após estourar o número de tentativas
+                  vTaskSuspend(_wifi_restabilsh_Task);
+              }          
+
+          break;
+
+          case POWERMGM_WAKEUP:
+                
+
+          break;
+
+          case POWERMGM_SILENCE_WAKEUP:
+                  
+
+          break;
+        }
 }
 
 void wifictl_save_config( void ) {

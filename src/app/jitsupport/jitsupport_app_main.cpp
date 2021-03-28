@@ -621,7 +621,6 @@ void Check_MQTT_Task(void * pvParameters ){
         
         case(MQTT_CONNECTED):
                           
-           log_i("MQTT Connected!");
            vTaskSuspend( _mqttCheck_Task );
 
         break;
@@ -719,10 +718,33 @@ void getWatchUser(){
     log_i("%s",GetWatchById_Url); 
     int err = 0;
   
+        
+
+#ifdef   NO_HTTP_RESPONSE  
+      String numerotopico = "11";            
+      
+      NomeTopicoReceber = "receber/" + numerotopico;
+      NomeTopicoAtualizar = "atualizar/" + numerotopico;
+      
+      log_i("Nome Topico Receber:");
+      log_i("%s",NomeTopicoReceber);
+      log_i("Nome Topico Atualizar:");            
+      log_i("%s",NomeTopicoAtualizar);
+      
+      NomeTopicoReceber.toCharArray(nometopico,15);
+      NomeTopicoAtualizar.toCharArray(atualizartopico,15);
+
+      client.subscribe(nometopico);
+      client.subscribe(atualizartopico);
+
+#endif       
+
+        
         http.begin(GetWatchById_Url); //HTTP
       //  http.begin("http://192.168.0.8:3000/watch");
         httpCode = http.GET();
         log_i("%d",httpCode);
+        
         if(httpCode > 0) {
 
           
@@ -736,7 +758,7 @@ void getWatchUser(){
                 log_i("%d",idTeam);
                 
               
-                String numerotopico = String(idTeam);            
+                String numerotopico = String(idTeam);       
                 
                 NomeTopicoReceber = "receber/" + numerotopico;
                 NomeTopicoAtualizar = "atualizar/" + numerotopico;
