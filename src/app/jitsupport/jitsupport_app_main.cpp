@@ -40,7 +40,6 @@
 #include <HTTPClient.h>
 #include <PubSubClient.h>
 
-
 typedef struct{
   const char*  ticket_id;
   const char*  workstation;
@@ -48,12 +47,21 @@ typedef struct{
   const char*  call_time;
   const char*  description;
   const char*  counter;
-  const char*  status;  
-} Ticket;
+  const char*  status;
+  int          state;  
+} Ticket_t;
 
-Ticket myticket;
+Ticket_t all_Tickets[MAX_NUMBER_TICKETS]; 
+
+//Ticket_t *lista = (Ticket_t *)malloc(sizeof (Ticket_t));
+Ticket_t  myticket;
 
 
+void busca_ticket2 (Ticket_t *myticket);
+void Insere_ticket2 (Ticket_t *myticket);
+
+void Insere_ticket (Ticket_t myticket,Ticket_t *lista);
+void busca_ticket (Ticket_t * lista);
 
 /***************Protótipos*************/
 
@@ -70,7 +78,7 @@ static void pub_mqtt(lv_obj_t *obj, lv_event_t event);
 static void exit_jitsupport_app_main_event_cb( lv_obj_t * obj, lv_event_t event );
 void printCard(uint8_t posic);
 void mqtt_reconnect();
-void printCard2(Ticket *myticket);
+void printCard2(Ticket_t *myticket);
 /*************MQTT*******************/
 
 const char* mqtt_server = MQTT_SERVER;
@@ -424,7 +432,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
                if(wifi_connected) vTaskResume( _mqttCheck_Task );             
                     
             break;
-    }
+        }
 
   client.loop();;
 return( true );
@@ -461,7 +469,15 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             
             log_i("\n Ticket ID: %s \n Workstation ID: %s \n Risk ID: %s \n Calltime ID: %s \n Description: %s\n",myticket.ticket_id,myticket.workstation,myticket.risk,myticket.call_time,myticket.description);
           
+            log_i("sizeof (ticket) = %d\n", sizeof (myticket));
+
+
             printCard2(&myticket);
+            //Insere_ticket (myticket,lista);
+            //busca_ticket (lista);
+
+            Insere_ticket2(&myticket);
+            busca_ticket2(&myticket);
 
             toggle_Cards_On();
 
@@ -640,7 +656,7 @@ void Check_MQTT_Task(void * pvParameters ){
 
         case(MQTT_CONNECTION_TIMEOUT):
 
-            log_i("MQTT timeout... ");         
+            log_i("MQTT timeout...");         
             mqtt_reconnect();
 
         break;
@@ -698,6 +714,168 @@ void mqtt_reconnect()
 
 
 
+
+void Insere_ticket2 (Ticket_t *myticket)
+{
+    //Ticket_t all_Tickets;
+
+    for(int i=0; i< MAX_NUMBER_TICKETS; i++)
+    {
+        if(all_Tickets[i].state==EMPTY)
+        {
+            all_Tickets[i].ticket_id=myticket->ticket_id;
+            all_Tickets[i].workstation=myticket->workstation;
+            all_Tickets[i].risk=myticket->risk;
+            all_Tickets[i].call_time=myticket->call_time;
+            all_Tickets[i].description=myticket->description;
+            all_Tickets[i].counter=myticket->counter;
+            all_Tickets[i].state=FULL;
+          return;
+        }
+      
+    }
+
+return; 
+
+}
+
+void busca_ticket2 (Ticket_t *myticket)
+{
+    for(int i=0; i< MAX_NUMBER_TICKETS; i++)
+    {
+        if(strcmp(all_Tickets[i].ticket_id,myticket->ticket_id)==0)
+        {
+           log_i("achei!!");
+
+           //log_i("%s", all_Tickets[i].description);
+        }
+
+      return;
+    }
+
+  log_i("não achei!!");
+  return; 
+}
+
+
+/*
+
+// -------Implementação de Lista Encadeada----------
+
+void Insere_ticket (Ticket_t myticket,Ticket_t *lista)
+{
+
+    Ticket_t *teste;
+    teste=(Ticket_t *) malloc(sizeof(Ticket_t));
+  
+
+    if(teste==NULL)
+    {
+          log_e("Espaço Insuficiente para o próximo ticket");
+          return; 
+    }
+    
+    //------Iguala o conteudo---------- 
+
+    teste->ticket_id=myticket.ticket_id;
+    teste->workstation=myticket.workstation;
+    teste->risk=myticket.risk;
+    teste->description=myticket.description;
+    teste->counter=myticket.counter;
+    teste->status=myticket.status;
+    teste->next= lista->next;
+
+   //----- Muda endereço do ponteiro para próximo ticket
+    //log_i("%p",next_myticket->next);
+    //log_i("%p",*next_myticket->next);  
+    
+
+    log_i("lista %p", teste);
+    log_i("lista %p", teste->next);
+    log_i("lista %p", lista->next);
+    lista->next= teste;
+    log_i("lista %p", lista->next);
+
+    //log_i("%p",next_myticket);
+    //log_i("%p",*next_myticket);  
+
+return ;
+}
+
+
+void busca_ticket (Ticket_t *lista)
+{
+    int static aux=0;
+
+    Ticket_t *p;
+    log_i("\nValores na lista:\n");
+
+     p = lista->next;  
+
+      //log_i("%s", p->ticket_id);
+      //log_i("%s", p->description);  
+      //log_i("%s", p->workstation);
+      //log_i("%p", p->next);
+
+     p =  p->next;
+
+        log_i("%s", p->ticket_id);
+      //log_i("%s", p->description);  
+      //log_i("%s", p->workstation);
+      //log_i("%p", p->next);
+
+    if(aux>0){ 
+
+
+      p =  p->next;
+
+        //log_i("%s", p->ticket_id);
+        //log_i("%s", p->description);  
+       // log_i("%s", p->workstation); 
+        log_i("%p", p->next);
+    }
+        aux++;
+    
+    /*
+    
+    for (p = lista->next; p->next != 0x0; p = (struct Ticket *)  p->next) {
+    
+      log_i("%s", p->ticket_id);
+      log_i("%s", p->description);  
+      log_i("%s", p->workstation);
+
+    }
+*/
+
+
+
+    /*
+    Ticket_t *myticket= ini_myticket;
+
+    log_i("%s", ID);   
+    while(myticket!=NULL)
+    {        
+          
+          log_i("%s", myticket->ticket_id);
+
+          if(strcmp(myticket->ticket_id,ID)==0){
+           log_i("achei");
+           log_i("%s", myticket->ticket_id);  
+           log_i("%s", myticket->description);   
+           return; 
+          } 
+          myticket=myticket->next;
+          
+    }
+
+    log_i("Não achei");
+    return; 
+
+}
+
+
+*/
+
 //----------------APP FUNCTIONS---------------------------- 
 
 
@@ -721,7 +899,7 @@ void getWatchUser(){
         
 
 #ifdef   NO_HTTP_RESPONSE  
-      String numerotopico = "11";            
+      String numerotopico = "15";            
       
       NomeTopicoReceber = "receber/" + numerotopico;
       NomeTopicoAtualizar = "atualizar/" + numerotopico;
@@ -823,7 +1001,7 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
 }
 
 
-void printCard2(Ticket *myticket){
+void printCard2(Ticket_t *myticket){
 
     lv_obj_set_hidden(bg_card, true); 
 
@@ -843,9 +1021,6 @@ void printCard2(Ticket *myticket){
 
 
 }
-
-
-
 
 
 void printCard(uint8_t posic){
@@ -951,13 +1126,13 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
 
     for(i=pos; i<tam; i++)
     {
-              strcpy(chamados[(i*num_tickets)+0],chamados[(i*num_tickets)+num_tickets+0]);
-              strcpy(chamados[(i*num_tickets)+1],chamados[(i*num_tickets)+num_tickets+1]);
-              strcpy(chamados[(i*num_tickets)+2],chamados[(i*num_tickets)+num_tickets+2]);
-              strcpy(chamados[(i*num_tickets)+3],chamados[(i*num_tickets)+num_tickets+3]);
-              strcpy(chamados[(i*num_tickets)+4],chamados[(i*num_tickets)+num_tickets+4]);
-              strcpy(chamados[(i*num_tickets)+5],chamados[(i*num_tickets)+num_tickets+5]);
-              strcpy(chamados[(i*num_tickets)+6],chamados[(i*num_tickets)+num_tickets+6]);
+        strcpy(chamados[(i*num_tickets)+0],chamados[(i*num_tickets)+num_tickets+0]);
+        strcpy(chamados[(i*num_tickets)+1],chamados[(i*num_tickets)+num_tickets+1]);
+        strcpy(chamados[(i*num_tickets)+2],chamados[(i*num_tickets)+num_tickets+2]);
+        strcpy(chamados[(i*num_tickets)+3],chamados[(i*num_tickets)+num_tickets+3]);
+        strcpy(chamados[(i*num_tickets)+4],chamados[(i*num_tickets)+num_tickets+4]);
+        strcpy(chamados[(i*num_tickets)+5],chamados[(i*num_tickets)+num_tickets+5]);
+        strcpy(chamados[(i*num_tickets)+6],chamados[(i*num_tickets)+num_tickets+6]);
     }
     counter--;
 

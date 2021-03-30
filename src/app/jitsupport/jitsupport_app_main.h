@@ -7,6 +7,11 @@
 
     #include <TTGO.h>
 
+
+    #define MAX_NUMBER_TICKETS          10
+    #define EMPTY                       1
+    #define FULL                        0
+
     void jitsupport_app_main_setup( uint32_t tile_num );
     void newticket( JsonObject jsonObj);
     

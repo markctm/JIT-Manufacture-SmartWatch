@@ -40,7 +40,7 @@
     #define EXPERIMENTALPOWERSAVEVOLTAGE    2700                /** @brief defines the norminal voltages while in powersave with exprimental powersave enabled */
 
     typedef struct {
-        int32_t designed_battery_cap = 1000;
+        int32_t designed_battery_cap = 380;
         int32_t silence_wakeup_interval = SILENCEWAKEINTERVAL;
         int32_t silence_wakeup_interval_vbplug = SILENCEWAKEINTERVAL_PLUG;
         int32_t normal_voltage = NORMALVOLTAGE;
