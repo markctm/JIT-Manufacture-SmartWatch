@@ -117,13 +117,13 @@ void pmu_loop( void ) {
     if ( temp_pmu_irq_flag ) {        
         ttgo->power->readIRQ();
         if ( ttgo->power->isVbusPlugInIRQ() ) {
-            powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
+           // powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
         }
         if ( ttgo->power->isVbusRemoveIRQ() ) {
             powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
         }
         if ( ttgo->power->isChargingIRQ() ) {
-            powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
+            //powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
         }
         if ( ttgo->power->isChargingDoneIRQ() ) {
             powermgm_set_event( POWERMGM_WAKEUP_REQUEST );

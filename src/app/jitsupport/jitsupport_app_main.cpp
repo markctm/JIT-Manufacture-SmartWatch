@@ -476,10 +476,10 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             //Insere_ticket (myticket,lista);
             //busca_ticket (lista);
 
-            Insere_ticket2(&myticket);
-            busca_ticket2(&myticket);
+            //Insere_ticket2(&myticket);
+            //busca_ticket2(&myticket);
 
-            toggle_Cards_On();
+            //toggle_Cards_On();
 
 
 

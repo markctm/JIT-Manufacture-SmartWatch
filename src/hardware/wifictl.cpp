@@ -307,7 +307,8 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
 
         case POWERMGM_SILENCE_WAKEUP:
               
-              //ct_Wifi_retry= WIFI_TENTATIVES_TO_RECONNECT/2;  Avaliar a necessidade de reteste no restabelecimento de conxeão 
+              ct_Wifi_retry= WIFI_TENTATIVES_TO_RECONNECT-5; // Avaliar a necessidade de reteste no restabelecimento de conxeão
+              vTaskResume(_wifi_restabilsh_Task); 
               wifictl_wakeup();
 
               log_i("POWERMGM_SILENCE_WAKEUP");
@@ -330,6 +331,8 @@ bool wifictl_powermgm_loop_event_cb( EventBits_t event, void *arg )
               {            
                   // Ajuda no quesito Desligar o SCAN do wifi imediatamente após estourar o número de tentativas
                   vTaskSuspend(_wifi_restabilsh_Task);
+                  wifictl_standby();
+                  wifi_connected=-1; // força flag do wifi (Desconectado) 
               }          
 
           break;
