@@ -386,7 +386,9 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     // lv_obj_set_event_cb(btn_config, pub_mqtt);
     
     client.setServer(mqtt_server, 1883);
+    client.setKeepAlive(60);
     client.setCallback(MQTT_callback);
+    
    
   //---- Task para Monitoração da Conexão MQTT
      xTaskCreatePinnedToCore( Check_MQTT_Task,     /* Function to implement the task */
@@ -421,20 +423,20 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
     switch(event) {
         case POWERMGM_STANDBY:  
               
-                if(wifi_connected) vTaskResume( _mqttCheck_Task );
+            //    if(wifi_connected==1) vTaskResume( _mqttCheck_Task );
             break;
         case POWERMGM_WAKEUP:
 
-                if(wifi_connected) vTaskResume( _mqttCheck_Task );
+             //   if(wifi_connected==1) vTaskResume( _mqttCheck_Task );
             break;
         case POWERMGM_SILENCE_WAKEUP:
                 
-               if(wifi_connected) vTaskResume( _mqttCheck_Task );             
+              // if(wifi_connected==1) vTaskResume( _mqttCheck_Task );             
                     
             break;
         }
 
-  client.loop();;
+  client.loop();
 return( true );
 }
 
@@ -467,8 +469,8 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             myticket.description= result["description"].as<const char*>();
             myticket.status="Open";
             
-            log_i("\n Ticket ID: %s \n Workstation ID: %s \n Risk ID: %s \n Calltime ID: %s \n Description: %s\n",myticket.ticket_id,myticket.workstation,myticket.risk,myticket.call_time,myticket.description);
-          
+            log_i("\n Ticket ID: %s \n Workstation ID: %s \n Risk ID: %s \n Calltime ID: %s \n Description: %s\n",myticket.ticket_id,myticket.workstation,myticket.risk,myticket.call_time,myticket.description); 
+            
             log_i("sizeof (ticket) = %d\n", sizeof (myticket));
 
 
@@ -636,10 +638,11 @@ void Check_MQTT_Task(void * pvParameters ){
       switch(client.state()){ 
         
         case(MQTT_CONNECTED):
-                          
-           vTaskSuspend( _mqttCheck_Task );
+                 
+            //vTaskSuspend(_mqttCheck_Task );
 
         break;
+
         case(MQTT_CONNECT_FAILED):
                      
            log_i("MQTT Conection Failed...");
@@ -649,8 +652,7 @@ void Check_MQTT_Task(void * pvParameters ){
         case(MQTT_DISCONNECTED):
             
             log_i("MQTT Disconnected... ");           
-            client.setCallback(MQTT_callback);
-            client.connect("ESP32CLIENT");
+            mqtt_reconnect();
 
         break;
 
@@ -665,6 +667,7 @@ void Check_MQTT_Task(void * pvParameters ){
      
             log_i("MQTT lost connection... ");  
             mqtt_reconnect();
+       
 
         break;     
 
@@ -704,7 +707,7 @@ void mqtt_reconnect()
 
           client.subscribe(nometopico);
           client.subscribe(atualizartopico);
-          client.subscribe("ttwatch");
+          //client.subscribe("ttwatch");
         }
         else  log_i("Failed !"); 
     
@@ -949,8 +952,8 @@ void getWatchUser(){
                 NomeTopicoReceber.toCharArray(nometopico,15);
                 NomeTopicoAtualizar.toCharArray(atualizartopico,15);
 
-                client.subscribe(nometopico);
-                client.subscribe(atualizartopico);
+                //client.subscribe(nometopico);
+                //client.subscribe(atualizartopico);
 
                 auto user = result["user"].as<const char*>();
                 log_i("%s",user);

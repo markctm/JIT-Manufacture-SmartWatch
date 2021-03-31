@@ -286,7 +286,7 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
               if(ct_Wifi_retry>WIFI_TENTATIVES_TO_RECONNECT)
               {            
                 log_i("NO_WIFI_GOTO_POWERMGM_STANDBY");
-
+                wifi_connected=-1;
                 wifictl_standby();
                 
               }
@@ -300,6 +300,7 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
         case POWERMGM_WAKEUP:
              
               wifictl_wakeup();
+              ct_Wifi_retry=0;
               vTaskResume(_wifi_restabilsh_Task);
 
               log_i("POWERMGM_WAKEUP");

@@ -73,10 +73,10 @@ extern int wifi_connected;
 
 //#define NO_HTTP_RESPONSE
 
+#define JABIL_SILENCE_WAKEUP_INTERVAL 3
 
 
-
-
+ 
 
 
 #ifdef __cplusplus // Allows to include config.h from C code

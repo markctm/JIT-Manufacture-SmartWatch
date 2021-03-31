@@ -32,7 +32,7 @@
     #define PMU_JSON_CONFIG_FILE    "/pmu.json"                 /** @brief defines json config file name */
 
 	//Some default values, used below as well as in pmu.cpp during json reads
-    #define SILENCEWAKEINTERVAL             45                  /** @brief defines the silence wakeup interval in minutes */
+    #define SILENCEWAKEINTERVAL             3                  /** @brief defines the silence wakeup interval in minutes */
 	#define SILENCEWAKEINTERVAL_PLUG		3                   /** @brief defines the silence wakeup interval in minutes when plugged*/
     #define NORMALVOLTAGE                   3300                /** @brief defines the norminal voltages while working */
     #define NORMALPOWERSAVEVOLTAGE          3000                /** @brief defines the norminal voltages while in powersave */

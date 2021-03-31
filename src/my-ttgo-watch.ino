@@ -70,7 +70,8 @@ void setup()
     splash_screen_stage_update( "init serial", 10 );
 
     splash_screen_stage_update( "init spiff", 20 );
-    if ( !SPIFFS.begin() ) {
+    
+    if ( !SPIFFS.begin() ){
         splash_screen_stage_update( "format spiff", 30 );
         SPIFFS.format();
         splash_screen_stage_update( "format spiff done", 40 );

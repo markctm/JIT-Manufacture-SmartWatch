@@ -126,7 +126,7 @@ void pmu_loop( void ) {
             //powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
         }
         if ( ttgo->power->isChargingDoneIRQ() ) {
-            powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
+           // powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
         }
         if ( ttgo->power->isPEKShortPressIRQ() ) {
             powermgm_set_event( POWERMGM_PMU_BUTTON );
@@ -281,12 +281,17 @@ void pmu_read_config( void ) {
         }
         else {
             pmu_config.silence_wakeup = doc["silence_wakeup"] | false;
-            pmu_config.silence_wakeup_interval = doc["silence_wakeup_interval"] | SILENCEWAKEINTERVAL;
+
+#ifdef      JABIL_SILENCE_WAKEUP_INTERVAL
+            pmu_config.silence_wakeup_interval =  JABIL_SILENCE_WAKEUP_INTERVAL;
+#else
+            pmu_config.silence_wakeup_interval = doc["silence_wakeup_interval"] | SILENCEWAKEINTERVAL;      
+#endif
             pmu_config.silence_wakeup_interval_vbplug = doc["silence_wakeup_interval_vbplug"] | SILENCEWAKEINTERVAL_PLUG;
             pmu_config.experimental_power_save = doc["experimental_power_save"] | false;
             pmu_config.compute_percent = doc["compute_percent"] | false;
             pmu_config.high_charging_target_voltage = doc["high_charging_target_voltage"] | false;
-            pmu_config.designed_battery_cap = doc["designed_battery_cap"] | 1000;
+            pmu_config.designed_battery_cap = doc["designed_battery_cap"] | 380;
             pmu_config.normal_voltage = doc["normal_voltage"] | NORMALVOLTAGE;
             pmu_config.normal_power_save_voltage = doc["normal_power_save_voltage"] | NORMALPOWERSAVEVOLTAGE;
             pmu_config.experimental_normal_voltage = doc["experimental_normal_voltage"] | EXPERIMENTALNORMALVOLTAGE;
