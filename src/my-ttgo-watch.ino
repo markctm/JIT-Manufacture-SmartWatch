@@ -67,9 +67,8 @@ void setup()
     screenshot_setup();
 
     splash_screen_stage_one();
-    splash_screen_stage_update( "init serial", 10 );
-
-    splash_screen_stage_update( "init spiff", 20 );
+    splash_screen_stage_update( "init serial", 10);
+    splash_screen_stage_update( "init spiff", 20);
     
     if ( !SPIFFS.begin() ){
         splash_screen_stage_update( "format spiff", 30 );
@@ -82,6 +81,7 @@ void setup()
             delay(3000);
             ESP.restart();
         }
+
     }
 
     splash_screen_stage_update( "init powermgm", 60 );
@@ -101,7 +101,6 @@ void setup()
 
     jitsupport_app_setup();
      
-
     if ( wifictl_get_autoon() && ( pmu_is_charging() || pmu_is_vbus_plug() || ( pmu_get_battery_voltage() > 3400) ) )
         Serial.print("Wifi wifictl_on Called");
         wifictl_on();

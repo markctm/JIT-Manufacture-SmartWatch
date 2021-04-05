@@ -461,7 +461,18 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
 
       if (String(topic) == NomeTopicoReceber) {
             
-            log_i("****VALID JSON MESSAGE *****");                
+            
+#ifdef OLD_APP_JIT
+            
+             log_i("****VALID JSON MESSAGE *****");      
+
+            auto id = result["id"].as<const char*>();
+            auto workstation = result["workstation"].as<const char*>();
+            auto risk = result["risk"].as<const char*>();
+            auto calltime = result["calltime"].as<const char*>();
+            auto description = result["description"].as<const char*>();
+
+#else 
             myticket.ticket_id= result["id"].as<const char*>();
             myticket.workstation= result["workstation"].as<const char*>();
             myticket.risk= result["calltime"].as<const char*>();
@@ -482,10 +493,55 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             //busca_ticket2(&myticket);
 
             //toggle_Cards_On();
+#endif
+
+#ifdef OLD_APP_JIT
 
 
+          if(!(counter==num_tickets)){
 
-    /*     if(!(counter==num_tickets)){
+            strcpy(chamados[(counter*num_tickets)+0],workstation);
+            strcpy(chamados[(counter*num_tickets)+1],risk);
+            Serial.println("TESTE DO RISCO");
+            
+
+            Serial.print("Bool 1:");
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1")==0);
+            Serial.print("Bool 2:");
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0")==0);
+            Serial.print("Bool 3:");
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
+            Serial.print("Bool 4:");
+
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+            if(strcmp(chamados[(counter*num_tickets)+1],"1")==0){
+              sprintf(chamados[(counter*num_tickets)+1],"Rodando");
+              Serial.println("Linha rodando");
+            }
+            else if(strcmp(chamados[(counter*num_tickets)+1],"0")==0){
+              Serial.println("Linha parada");
+              sprintf(chamados[(counter*num_tickets)+1],"Parada");
+            }
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"1"));
+            Serial.println(strcmp(chamados[(counter*num_tickets)+1],"0"));
+            strcpy(chamados[(counter*num_tickets)+2],calltime);
+
+            strcpy(chamados[(counter*num_tickets)+3],description);
+          
+            strcpy(chamados[(counter*num_tickets)+4],id);
+            strcpy(chamados[(counter*num_tickets)+5],"Open");
+            strcpy(chamados[(counter*num_tickets)+6],"");
+            counter = counter +1;
+            atual = counter;
+            printCard(counter-1);
+            
+            toggle_Cards_On();
+                          
+                  // twatch->motor->onec();
+            }
+#else
+
+      if(!(counter==num_tickets)){
 
               strcpy(chamados[(counter*num_tickets)+0],myticket.workstation);
               strcpy(chamados[(counter*num_tickets)+1],myticket.risk);
@@ -525,7 +581,8 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
               toggle_Cards_On();
                           
                   // twatch->motor->onec();
-            }*/
+            }
+#endif
        } // if String(topic) == NomeTopicoReceber)
 
       else if(String(topic) == NomeTopicoAtualizar){
@@ -952,8 +1009,8 @@ void getWatchUser(){
                 NomeTopicoReceber.toCharArray(nometopico,15);
                 NomeTopicoAtualizar.toCharArray(atualizartopico,15);
 
-                //client.subscribe(nometopico);
-                //client.subscribe(atualizartopico);
+                client.subscribe(nometopico);
+                client.subscribe(atualizartopico);
 
                 auto user = result["user"].as<const char*>();
                 log_i("%s",user);
