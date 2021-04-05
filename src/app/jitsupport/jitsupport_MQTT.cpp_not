@@ -1,0 +1,160 @@
+/****************************************************************************
+ *   Aug 21 17:26:00 2020
+ *   Copyright  2020  Chris McNamee
+ *   Email: chris.mcna@gmail.com
+ ****************************************************************************/
+ 
+/*
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+#include "config.h"
+#include <TTGO.h>
+
+#include "jitsupport_app.h"
+#include "jitsupport_MQTT.h"
+
+#include "hardware/powermgm.h"
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <PubSubClient.h>
+
+/*************MQTT*******************/
+
+const char* mqtt_server = MQTT_SERVER;
+WiFiClient espClient;
+PubSubClient client(espClient);
+TaskHandle_t _mqttCheck_Task, _Reconnect_Task;
+
+void Check_MQTT_Task( void * pvParameters );
+void Mqtt_Reconnect( void * pvParameters );
+//void Mqtt_Connected( void * pvParameters );
+
+#define MQTT_CONNECTED_FLAG       (1<<0)
+#define MQTT_DISCONNECTED_FLAG    (1<<1)
+
+EventGroupHandle_t xMqttEvent;
+
+
+void mqttctrl_setup()
+{
+
+    client.setServer(mqtt_server, 1883);
+    client.setKeepAlive(60);
+    //client.setCallback(MQTT_callback);
+
+    xMqttEvent=xEventGroupCreate(); 
+
+
+  //---- Task para Monitoração da Conexão MQTT
+     xTaskCreatePinnedToCore( Check_MQTT_Task,                              /* Function to implement the task */
+                             "Mqtt CheckTask",                              /* Name of the task */
+                              3000,                                         /* Stack size in words */
+                              NULL,                                         /* Task input parameter */
+                              1,                                            /* Priority of the task */
+                              &_mqttCheck_Task,                             /* Task handle. */
+                              0 );
+
+
+  //---- Task para Reestabelecimento da Conexão MQTT
+     xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
+                             "Mqtt Reconnect",                              /* Name of the task */
+                              configMINIMAL_STACK_SIZE + 1024,              /* Stack size in words */
+                              NULL,                                         /* Task input parameter */
+                              1,                                            /* Priority of the task */
+                              &_Reconnect_Task,                             /* Task handle. */
+                              0 );
+
+}
+
+
+/* Possible values for client.state()
+ MQTT_CONNECTION_TIMEOUT     -4
+ MQTT_CONNECTION_LOST        -3
+ MQTT_CONNECT_FAILED         -2
+ MQTT_DISCONNECTED           -1
+ MQTT_CONNECTED               0
+ MQTT_CONNECT_BAD_PROTOCOL    1
+ MQTT_CONNECT_BAD_CLIENT_ID   2
+ MQTT_CONNECT_UNAVAILABLE     3
+ MQTT_CONNECT_BAD_CREDENTIALS 4
+ MQTT_CONNECT_UNAUTHORIZED    5
+*/
+
+void Check_MQTT_Task(void * pvParameters ){
+  
+    while (1) {
+
+      switch(client.state()){    
+        
+        case(MQTT_CONNECTED):
+          
+        break;
+
+        case(MQTT_CONNECT_FAILED):
+                     
+           log_i("MQTT Conection Failed...");
+        break;
+
+        case(MQTT_DISCONNECTED):
+            
+            log_i("MQTT Disconnected... ");
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);           
+
+        break;
+
+        case(MQTT_CONNECTION_TIMEOUT):
+
+            log_i("MQTT timeout...");         
+
+        break;
+
+        case(MQTT_CONNECTION_LOST):
+     
+            log_i("MQTT lost connection... ");  
+    
+        break;     
+
+        default:
+         log_i("MQTT NOT TREATED STATE:");  
+         log_i("%s",client.state());   
+      }
+        vTaskDelay(CHECK_MQTT_CONNECTION_MILLI_SECONDS / portTICK_PERIOD_MS );
+    } 
+  }
+
+
+
+void Mqtt_Reconnect(void * pvParameters)
+{  
+    
+    EventBits_t xBits;
+
+    while(1)
+    {     
+          xBits=xEventGroupWaitBits(xMqttEvent,MQTT_DISCONNECTED_FLAG,pdTRUE,pdTRUE,portMAX_DELAY);  
+          log_i("MQTT reconnection...");
+          if (client.connect())
+          {
+            log_i("MQQT Connected");    
+            // client.subscribe(nometopico);
+            // client.subscribe(atualizartopico);
+          }
+          else  log_i("Failed !");     
+      }
+
+}
+   
+

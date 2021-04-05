@@ -84,8 +84,7 @@ void printCard2(Ticket_t *myticket);
 const char* mqtt_server = MQTT_SERVER;
 WiFiClient espClient;
 PubSubClient client(espClient);
-TaskHandle_t _mqttCheck_Task;
-void Check_MQTT_Task( void * pvParameters );
+bool once_flag=false;
 
 uint8_t idTeam;
 String NomeTopicoReceber="";
@@ -95,6 +94,18 @@ char atualizartopico[15];
 char payload[100];
 char nomepeq[10]= "a";
 char nomefull[100];
+
+
+#define MQTT_CONNECTED_FLAG       (1<<0)
+#define MQTT_DISCONNECTED_FLAG    (1<<1)
+
+
+EventGroupHandle_t xMqttEvent;
+TaskHandle_t _mqttCheck_Task, _Reconnect_Task;
+void Check_MQTT_Task( void * pvParameters );
+void Mqtt_Reconnect( void * pvParameters );
+
+
 
 
 /************APIS ********************************/
@@ -388,7 +399,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     client.setServer(mqtt_server, 1883);
     client.setKeepAlive(60);
     client.setCallback(MQTT_callback);
-    
+    xMqttEvent=xEventGroupCreate(); 
    
   //---- Task para Monitoração da Conexão MQTT
      xTaskCreatePinnedToCore( Check_MQTT_Task,     /* Function to implement the task */
@@ -399,6 +410,16 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               &_mqttCheck_Task,   /* Task handle. */
                               0 );
     //vTaskSuspend( _mqttCheck_Task );
+
+
+  //---- Task para Reestabelecimento da Conexão MQTT
+     xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
+                             "Mqtt Reconnect",                              /* Name of the task */
+                               3000,                                        /* Stack size in words */
+                              NULL,                                         /* Task input parameter */
+                              1,                                            /* Priority of the task */
+                              &_Reconnect_Task,                             /* Task handle. */
+                              0 );
 
 
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_event_cb, "jitsupport app loop" );
@@ -698,32 +719,43 @@ void Check_MQTT_Task(void * pvParameters ){
                  
             //vTaskSuspend(_mqttCheck_Task );
 
+            if(once_flag==false)
+            {
+              client.subscribe(nometopico);
+              client.subscribe(atualizartopico);
+              once_flag=true;
+            }
+
         break;
 
         case(MQTT_CONNECT_FAILED):
                      
            log_i("MQTT Conection Failed...");
-           mqtt_reconnect();
+           //mqtt_reconnect();
+           xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
 
         break;
         case(MQTT_DISCONNECTED):
             
             log_i("MQTT Disconnected... ");           
-            mqtt_reconnect();
+            //mqtt_reconnect();
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
 
         break;
 
         case(MQTT_CONNECTION_TIMEOUT):
 
             log_i("MQTT timeout...");         
-            mqtt_reconnect();
+           // mqtt_reconnect();
+           xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
 
         break;
 
         case(MQTT_CONNECTION_LOST):
      
             log_i("MQTT lost connection... ");  
-            mqtt_reconnect();
+            //mqtt_reconnect();
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
        
 
         break;     
@@ -758,18 +790,62 @@ void mqtt_reconnect()
         if (client.connect(ip_address)){
           log_i("MQQT Connected");
 
-          if(!(pegueiUser)){
-              getWatchUser();
-          } 
 
-          client.subscribe(nometopico);
-          client.subscribe(atualizartopico);
+
           //client.subscribe("ttwatch");
         }
         else  log_i("Failed !"); 
     
     }
 }
+
+
+
+void Mqtt_Reconnect(void * pvParameters)
+{  
+    
+    EventBits_t xBits;
+
+    while(1)
+    {     
+          xBits=xEventGroupWaitBits(xMqttEvent,MQTT_DISCONNECTED_FLAG,pdTRUE,pdTRUE,portMAX_DELAY);  
+          log_i("MQTT reconnection...");
+          if (client.connect(ip_address))
+          {
+            
+            
+            if(!(pegueiUser)){
+                getWatchUser();
+            } 
+                        
+            
+            log_i("MQQT Connected");    
+            client.subscribe(nometopico);
+            client.subscribe(atualizartopico);
+          }
+          else  log_i("Failed !");     
+      }
+
+}
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1009,8 +1085,8 @@ void getWatchUser(){
                 NomeTopicoReceber.toCharArray(nometopico,15);
                 NomeTopicoAtualizar.toCharArray(atualizartopico,15);
 
-                client.subscribe(nometopico);
-                client.subscribe(atualizartopico);
+                //client.subscribe(nometopico);
+                //client.subscribe(atualizartopico);
 
                 auto user = result["user"].as<const char*>();
                 log_i("%s",user);
@@ -1026,7 +1102,7 @@ void getWatchUser(){
                 
               } else {
                   log_i("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-                  
+                  pegueiUser = false;
               }
 
         http.end();

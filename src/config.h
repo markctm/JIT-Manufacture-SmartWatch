@@ -56,7 +56,7 @@ extern int wifi_connected;
 //------MQTT---CONNECTION------
 
 #define MQTT_SERVER                                 "test.mosquitto.org"
-#define CHECK_MQTT_CONNECTION_MILLI_SECONDS          4000
+#define CHECK_MQTT_CONNECTION_MILLI_SECONDS          2000
 #define WIFI_TENTATIVES_TO_RECONNECT                 20
 
  
