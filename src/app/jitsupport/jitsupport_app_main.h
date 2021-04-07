@@ -11,8 +11,7 @@
     #define MAX_NUMBER_TICKETS          10
     #define EMPTY                       1
     #define FULL                        0
-
-    #define OLD_APP_JIT
+    #define OLD_APP_JIT   
 
 
     void jitsupport_app_main_setup( uint32_t tile_num );

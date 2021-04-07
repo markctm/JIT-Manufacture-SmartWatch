@@ -231,7 +231,7 @@ void wifictl_setup( void ) {
                               2,                     /* Priority of the task */
                               &_wifi_restabilsh_Task,         /* Task handle. */
                               0 );
-    vTaskSuspend( _wifi_restabilsh_Task);
+    //vTaskSuspend( _wifi_restabilsh_Task);
 
 
     powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_event_cb, "wifictl" );
@@ -267,7 +267,7 @@ void wifi_restablish_Task( void * pvParameters)
                 vTaskSuspend( _wifi_restabilsh_Task);
               }
 
-        vTaskDelay(500/ portTICK_PERIOD_MS ); 
+        vTaskDelay(1000/ portTICK_PERIOD_MS ); 
       }     
 }
 

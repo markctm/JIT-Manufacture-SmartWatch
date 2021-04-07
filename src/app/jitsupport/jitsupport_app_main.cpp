@@ -34,6 +34,9 @@
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 
+
+              
+
 #define USE_SERIAL Serial
 
 #include <WiFi.h>
@@ -396,8 +399,8 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_label_set_text(lbl_btn_config, LV_SYMBOL_SETTINGS);
     // lv_obj_set_event_cb(btn_config, pub_mqtt);
     
-    client.setServer(mqtt_server, 1883);
-    client.setKeepAlive(60);
+    client.setServer(mqtt_server, MQTT_PORT);
+    client.setKeepAlive(MQTT_KEEPALIVE_SECONDS);
     client.setCallback(MQTT_callback);
     xMqttEvent=xEventGroupCreate(); 
    
@@ -409,8 +412,6 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               1,                /* Priority of the task */
                               &_mqttCheck_Task,   /* Task handle. */
                               0 );
-    //vTaskSuspend( _mqttCheck_Task );
-
 
   //---- Task para Reestabelecimento da Conexão MQTT
      xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
@@ -458,6 +459,7 @@ bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
         }
 
   client.loop();
+
 return( true );
 }
 
@@ -482,7 +484,7 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
 
       if (String(topic) == NomeTopicoReceber) {
             
-            
+
 #ifdef OLD_APP_JIT
             
              log_i("****VALID JSON MESSAGE *****");      
@@ -517,7 +519,6 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
 #endif
 
 #ifdef OLD_APP_JIT
-
 
           if(!(counter==num_tickets)){
 
@@ -716,13 +717,15 @@ void Check_MQTT_Task(void * pvParameters ){
       switch(client.state()){ 
         
         case(MQTT_CONNECTED):
-                 
-            //vTaskSuspend(_mqttCheck_Task );
 
+            log_i("MQTT_CONNECTION OK");
             if(once_flag==false)
             {
-              client.subscribe(nometopico);
-              client.subscribe(atualizartopico);
+               log_i("%s", nometopico);
+               log_i("%s", atualizartopico);
+              
+              client.subscribe(nometopico,MQTTQOS1);
+              client.subscribe(atualizartopico,MQTTQOS1);
               once_flag=true;
             }
 
@@ -730,39 +733,38 @@ void Check_MQTT_Task(void * pvParameters ){
 
         case(MQTT_CONNECT_FAILED):
                      
-           log_i("MQTT Conection Failed...");
-           //mqtt_reconnect();
+           log_i("MQTT_CONNECT_FAILED...");
            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
 
         break;
         case(MQTT_DISCONNECTED):
             
-            log_i("MQTT Disconnected... ");           
-            //mqtt_reconnect();
+            log_i("MQTT_DISCONNECTED");           
             xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
 
         break;
 
         case(MQTT_CONNECTION_TIMEOUT):
 
-            log_i("MQTT timeout...");         
-           // mqtt_reconnect();
-           xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
+            log_i("MQTT_CONNECTION_TIMEOUT");         
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
 
         break;
 
         case(MQTT_CONNECTION_LOST):
      
             log_i("MQTT lost connection... ");  
-            //mqtt_reconnect();
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
-       
-
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);        
         break;     
+
+        case(MQTT_CONNECT_BAD_CLIENT_ID):   
+            log_i("MQTT_CONNECT_BAD_CLIENT_ID");  
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);     
+        break; 
 
         default:
          log_i("MQTT NOT TREATED STATE:");  
-          log_i("%s",client.state());   
+         log_i("%d",client.state());   
       }
         vTaskDelay(CHECK_MQTT_CONNECTION_MILLI_SECONDS/ portTICK_PERIOD_MS );
     } 
@@ -779,52 +781,45 @@ static void pub_mqtt(lv_obj_t *obj, lv_event_t event)
     
 }
 
-
+/*
 void mqtt_reconnect()
 {  
     // Attempt to connect
     if(!client.connected()){
      
         log_i("MQTT reconnection...");
-
         if (client.connect(ip_address)){
           log_i("MQQT Connected");
-
-
-
-          //client.subscribe("ttwatch");
         }
         else  log_i("Failed !"); 
     
     }
 }
-
-
+*/
 
 void Mqtt_Reconnect(void * pvParameters)
 {  
-    
     EventBits_t xBits;
-
     while(1)
     {     
-          xBits=xEventGroupWaitBits(xMqttEvent,MQTT_DISCONNECTED_FLAG,pdTRUE,pdTRUE,portMAX_DELAY);  
-          log_i("MQTT reconnection...");
-          if (client.connect(ip_address))
-          {
+        
+        xBits=xEventGroupWaitBits(xMqttEvent,MQTT_DISCONNECTED_FLAG,pdTRUE,pdTRUE,portMAX_DELAY); 
             
-            
-            if(!(pegueiUser)){
-                getWatchUser();
-            } 
-                        
-            
-            log_i("MQQT Connected");    
-            client.subscribe(nometopico);
-            client.subscribe(atualizartopico);
-          }
-          else  log_i("Failed !");     
-      }
+            if(wifi_connected==1)
+            {  
+              
+                if(!pegueiUser)getWatchUser();
+                log_i("MQTT reconnection...");                     
+                log_i("%s",ip_address);
+
+                if (client.connect("marreco", MQTT_USER, MQTT_PSSWD,"status_team/16", 2, 1,"", 0))
+                {                             
+                  log_i("MQQT Connected");    
+                }
+                else  log_i("Failed !");     
+            }
+        
+        }
 
 }
    
@@ -972,7 +967,7 @@ void busca_ticket (Ticket_t *lista)
     }
         aux++;
     
-    /*
+    
     
     for (p = lista->next; p->next != 0x0; p = (struct Ticket *)  p->next) {
     
@@ -1035,7 +1030,8 @@ void getWatchUser(){
         
 
 #ifdef   NO_HTTP_RESPONSE  
-      String numerotopico = "15";            
+      String numerotopico = "15";
+                  
       
       NomeTopicoReceber = "receber/" + numerotopico;
       NomeTopicoAtualizar = "atualizar/" + numerotopico;
