@@ -478,13 +478,15 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
   deserializeJson(result, message);
   JsonObject object = result.as<JsonObject>();
   
+  log_i("Valor JSON %d:",object.isNull());
+
   if(object.isNull()==false)
   {
       // OK VALID JSON ! 
-
+     log_i("Aqui chegou");
       if (String(topic) == NomeTopicoReceber) {
             
-
+          log_i("Aqui chegou3");
 #ifdef OLD_APP_JIT
             
              log_i("****VALID JSON MESSAGE *****");      
@@ -718,14 +720,14 @@ void Check_MQTT_Task(void * pvParameters ){
         
         case(MQTT_CONNECTED):
 
-            log_i("MQTT_CONNECTION OK");
             if(once_flag==false)
             {
                log_i("%s", nometopico);
                log_i("%s", atualizartopico);
               
-              client.subscribe(nometopico,MQTTQOS1);
-              client.subscribe(atualizartopico,MQTTQOS1);
+              client.subscribe(nometopico,1);
+              client.subscribe(atualizartopico,1);
+
               once_flag=true;
             }
 
@@ -812,7 +814,7 @@ void Mqtt_Reconnect(void * pvParameters)
                 log_i("MQTT reconnection...");                     
                 log_i("%s",ip_address);
 
-                if (client.connect("marreco", MQTT_USER, MQTT_PSSWD,"status_team/16", 2, 1,"", 0))
+                if (client.connect(ip_address, MQTT_USER, MQTT_PSSWD,"status_team/16", 1, 1,"oi", 0))
                 {                             
                   log_i("MQQT Connected");    
                 }
@@ -1044,8 +1046,10 @@ void getWatchUser(){
       NomeTopicoReceber.toCharArray(nometopico,15);
       NomeTopicoAtualizar.toCharArray(atualizartopico,15);
 
-      client.subscribe(nometopico);
-      client.subscribe(atualizartopico);
+      //client.subscribe(nometopico);
+      //client.subscribe(atualizartopico);
+
+      return;
 
 #endif       
 
