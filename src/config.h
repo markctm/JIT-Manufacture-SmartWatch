@@ -23,7 +23,8 @@
  */
 #ifndef _CONFIG_H 
 
-    #define LILYGO_WATCH_2020_V1             //To use T-Watch2020, please uncomment this line
+    #define LILYGO_WATCH_2019_WITH_TOUCH
+    //#define LILYGO_WATCH_2020_V1             //To use T-Watch2020, please uncomment this line
     #define LILYGO_WATCH_LVGL                //To use LVGL, you need to enable the macro LVGL
     #define TWATCH_USE_PSRAM_ALLOC_LVGL
 
@@ -45,8 +46,6 @@
 
 
 
-
-
 //-----------Global---------
 
 
@@ -54,8 +53,10 @@ extern int wifi_connected;
 
 
 //------MQTT---CONNECTION------
+#define MQTT_BROKER_MOSQUITTO                        
+// #define MQTT_BROKER_CLOUD                                                          
 
-//#define MQTT_SERVER                                 "test.mosquitto.org"
+#ifdef  MQTT_BROKER_CLOUD                                
 
 #define MQTT_SERVER                                 "m16.cloudmqtt.com"
 #define MQTT_USER                                   "pbgjzbad"
@@ -63,7 +64,17 @@ extern int wifi_connected;
 #define MQTT_PORT                                   10304
 #define MQTT_KEEPALIVE_SECONDS                      120
 
+#endif
 
+#ifdef  MQTT_BROKER_MOSQUITTO                                
+
+#define MQTT_SERVER                                 "test.mosquitto.org"
+#define MQTT_USER                                   NULL
+#define MQTT_PSSWD                                  NULL
+#define MQTT_PORT                                   1883
+#define MQTT_KEEPALIVE_SECONDS                      120
+
+#endif
 
 
 #define CHECK_MQTT_CONNECTION_MILLI_SECONDS          2000
@@ -74,19 +85,16 @@ extern int wifi_connected;
 //#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
 //#define WIFI_PASSWORD     "3617970200"
 
-#define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
-#define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
+//#define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
+//#define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
 
-//#define WIFI_SSID         "JAB_RASP0001"
-//#define WIFI_PASSWORD     "g4keKDI2RkXQT"
+#define WIFI_SSID         "JAB_RASP0001"
+#define WIFI_PASSWORD     "g4keKDI2RkXQT"
 
 
-#define NO_HTTP_RESPONSE
+//#define NO_HTTP_RESPONSE
 
 #define JABIL_SILENCE_WAKEUP_INTERVAL 3
-
-
- 
 
 
 #ifdef __cplusplus // Allows to include config.h from C code

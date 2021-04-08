@@ -33,9 +33,8 @@
 #include "hardware/motor.h"
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
-
-
-              
+#include "hardware/alloc.h"
+#include "hardware/callback.h"        
 
 #define USE_SERIAL Serial
 
@@ -99,15 +98,17 @@ char nomepeq[10]= "a";
 char nomefull[100];
 
 
-#define MQTT_CONNECTED_FLAG       (1<<0)
-#define MQTT_DISCONNECTED_FLAG    (1<<1)
+EventGroupHandle_t xMqttEvent=NULL;
+portMUX_TYPE DRAM_ATTR mqttMux = portMUX_INITIALIZER_UNLOCKED;
 
-
-EventGroupHandle_t xMqttEvent;
 TaskHandle_t _mqttCheck_Task, _Reconnect_Task;
+callback_t *mqtt_callback = NULL;
+
 void Check_MQTT_Task( void * pvParameters );
 void Mqtt_Reconnect( void * pvParameters );
 
+bool mqtt_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
+bool mqtt_send_event_cb( EventBits_t event, void *arg);
 
 
 
@@ -126,7 +127,7 @@ TTGOClass *twatch;
 bool pegueiUser = false;
 
 
-bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg );
+bool jitsupport_powermgm_loop_cb( EventBits_t event, void *arg );
 
 long jitsupport_milliseconds = 0;   //NP
 time_t jitprevtime;  //NP
@@ -402,6 +403,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     client.setServer(mqtt_server, MQTT_PORT);
     client.setKeepAlive(MQTT_KEEPALIVE_SECONDS);
     client.setCallback(MQTT_callback);
+
     xMqttEvent=xEventGroupCreate(); 
    
   //---- Task para Monitoração da Conexão MQTT
@@ -423,7 +425,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               0 );
 
 
-   powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_event_cb, "jitsupport app loop" );
+   powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_loop_cb, "jitsupport app loop" );
 
 }
 
@@ -440,7 +442,7 @@ static void exit_jitsupport_app_main_event_cb( lv_obj_t * obj, lv_event_t event 
 
 
 
-bool jitsupport_powermgm_event_cb( EventBits_t event, void *arg ) {
+bool jitsupport_powermgm_loop_cb( EventBits_t event, void *arg ) {
 
     switch(event) {
         case POWERMGM_STANDBY:  
@@ -466,6 +468,50 @@ return( true );
 
 
 //-------------------------MQTT FUNCTIONS------------------------
+
+
+bool mqtt_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id ) {
+    if ( mqtt_callback == NULL ) {
+        mqtt_callback = callback_init( "mqtt" );
+        if ( mqtt_callback == NULL ) {
+            log_e("mqtt callback alloc failed");
+            while(true);
+        }
+    }    
+    return( callback_register( mqtt_callback, event, callback_func, id ) );
+}
+
+bool mqtt_send_event_cb( EventBits_t event, void *arg ) {
+    return( callback_send( mqtt_callback, event, arg ) );
+}
+
+
+void mqtt_set_event( EventBits_t bits ) {
+    portENTER_CRITICAL(&mqttMux);
+    xEventGroupSetBits( xMqttEvent, bits );
+    portEXIT_CRITICAL(&mqttMux);
+}
+
+void mqtt_clear_event( EventBits_t bits ) {
+    portENTER_CRITICAL(&mqttMux);
+    xEventGroupClearBits( xMqttEvent, bits );
+    portEXIT_CRITICAL(&mqttMux);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void MQTT_callback(char* topic, byte* message, unsigned int length) {
@@ -720,10 +766,16 @@ void Check_MQTT_Task(void * pvParameters ){
         
         case(MQTT_CONNECTED):
 
+             mqtt_set_event( MQTT_CONNECTED_FLAG );
+             //mqtt_send_event_cb(MQTT_CONNECTED_FLAG, (void *)"MQTT connected");
             if(once_flag==false)
             {
                log_i("%s", nometopico);
                log_i("%s", atualizartopico);
+              
+              
+              if(nometopico=="")break;
+              if(atualizartopico=="")break;
               
               client.subscribe(nometopico,1);
               client.subscribe(atualizartopico,1);
@@ -734,34 +786,42 @@ void Check_MQTT_Task(void * pvParameters ){
         break;
 
         case(MQTT_CONNECT_FAILED):
-                     
+
            log_i("MQTT_CONNECT_FAILED...");
-           xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
+           xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
+          // mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);   
 
         break;
         case(MQTT_DISCONNECTED):
             
+              
             log_i("MQTT_DISCONNECTED");           
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
+           // mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);   
 
         break;
 
         case(MQTT_CONNECTION_TIMEOUT):
 
+               
             log_i("MQTT_CONNECTION_TIMEOUT");         
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);  
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
+           // mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);  
 
         break;
 
         case(MQTT_CONNECTION_LOST):
      
+             
             log_i("MQTT lost connection... ");  
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);        
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
+            //mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);          
         break;     
 
         case(MQTT_CONNECT_BAD_CLIENT_ID):   
             log_i("MQTT_CONNECT_BAD_CLIENT_ID");  
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);     
+            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
+            //mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);        
         break; 
 
         default:
