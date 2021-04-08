@@ -174,26 +174,44 @@ void timesync_read_config( void ) {
     }
     else {
         int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
 
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("update check deserializeJson() failed: %s", error.c_str() );
-        }
-        else {
-            timesync_config.daylightsave = doc["daylightsave"] | false;
-            timesync_config.timesync = doc["timesync"] | true;
-            timesync_config.timezone = doc["timezone"] | 0;
-            timesync_config.use_24hr_clock = doc["use_24hr_clock"] | true;
+        if(filesize==0)
+        {
+            timesync_config.daylightsave = false;
+            timesync_config.timesync = true;
+            timesync_config.timezone = 0;
+            timesync_config.use_24hr_clock =  true;
             // todo: for upgrade, default name = Etc\GMTxxx based on timezone & daylightsave
             // todo: for upgrade, default rule = GMT0 or <-xx>xx based on timezone & daylightsave
             // todo: upgrade rtc clock to be in utc? (First sync will fix it.)
-            strlcpy( timesync_config.timezone_name, doc["timezone_name"] | TIMEZONE_NAME_DEFAULT, sizeof( timesync_config.timezone_name ) );
-            strlcpy( timesync_config.timezone_rule, doc["timezone_rule"] | TIMEZONE_RULE_DEFAULT, sizeof( timesync_config.timezone_rule ) );
+            strlcpy( timesync_config.timezone_name, TIMEZONE_NAME_DEFAULT, sizeof( timesync_config.timezone_name ) );
+            strlcpy( timesync_config.timezone_rule, TIMEZONE_RULE_DEFAULT, sizeof( timesync_config.timezone_rule ) );
             setenv("TZ", timesync_config.timezone_rule, 1);
             tzset();
+
         }
-        doc.clear();
+        else
+        {
+            SpiRamJsonDocument doc( filesize * 2 );
+            DeserializationError error = deserializeJson( doc, file );
+            if ( error ) {
+                log_e("update check deserializeJson() failed: %s", error.c_str() );
+            }
+            else {
+                timesync_config.daylightsave = doc["daylightsave"] | false;
+                timesync_config.timesync = doc["timesync"] | true;
+                timesync_config.timezone = doc["timezone"] | 0;
+                timesync_config.use_24hr_clock = doc["use_24hr_clock"] | true;
+                // todo: for upgrade, default name = Etc\GMTxxx based on timezone & daylightsave
+                // todo: for upgrade, default rule = GMT0 or <-xx>xx based on timezone & daylightsave
+                // todo: upgrade rtc clock to be in utc? (First sync will fix it.)
+                strlcpy( timesync_config.timezone_name, doc["timezone_name"] | TIMEZONE_NAME_DEFAULT, sizeof( timesync_config.timezone_name ) );
+                strlcpy( timesync_config.timezone_rule, doc["timezone_rule"] | TIMEZONE_RULE_DEFAULT, sizeof( timesync_config.timezone_rule ) );
+                setenv("TZ", timesync_config.timezone_rule, 1);
+                tzset();
+            }
+            doc.clear();
+        }
     }
     file.close();
 }

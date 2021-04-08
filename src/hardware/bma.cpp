@@ -240,21 +240,35 @@ void bma_read_config( void ) {
     if (!file) {
         log_e("Can't open file: %s!", BMA_JSON_COFIG_FILE );
     }
-    else {
+    else {       
         int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
+        
+        log_i("File size BMA %d", filesize);
+        
+        if(filesize==0)
+    	{
+            bma_config[ BMA_STEPCOUNTER ].enable = true;
+            bma_config[ BMA_DOUBLECLICK ].enable =  true;
+            bma_config[ BMA_TILT ].enable = false;
+            bma_config[ BMA_DAILY_STEPCOUNTER ].enable =  false;
 
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("update check deserializeJson() failed: %s", error.c_str() );
         }
-        else {
-            bma_config[ BMA_STEPCOUNTER ].enable = doc["stepcounter"] | true;
-            bma_config[ BMA_DOUBLECLICK ].enable = doc["doubleclick"] | true;
-            bma_config[ BMA_TILT ].enable = doc["tilt"] | false;
-            bma_config[ BMA_DAILY_STEPCOUNTER ].enable = doc["daily_stepcounter"] | false;
-        }        
-        doc.clear();
+        else{
+
+            SpiRamJsonDocument doc( filesize * 2 );
+            DeserializationError error = deserializeJson( doc, file );
+            if ( error ) {
+                log_e("update check deserializeJson() failed: %s", error.c_str() );
+            }
+            else {
+                bma_config[ BMA_STEPCOUNTER ].enable = doc["stepcounter"] | true;
+                bma_config[ BMA_DOUBLECLICK ].enable = doc["doubleclick"] | true;
+                bma_config[ BMA_TILT ].enable = doc["tilt"] | false;
+                bma_config[ BMA_DAILY_STEPCOUNTER ].enable = doc["daily_stepcounter"] | false;
+            }        
+            doc.clear();
+
+        }
     }
     file.close();
 }
