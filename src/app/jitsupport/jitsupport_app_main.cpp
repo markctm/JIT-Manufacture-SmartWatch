@@ -1329,7 +1329,7 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
         strcpy(chamados[(i*num_tickets)+4],chamados[(i*num_tickets)+num_tickets+4]);
         strcpy(chamados[(i*num_tickets)+5],chamados[(i*num_tickets)+num_tickets+5]);
         strcpy(chamados[(i*num_tickets)+6],chamados[(i*num_tickets)+num_tickets+6]);
-    }
+    };
     counter--;
 
     log_i("Counter:");
@@ -1350,7 +1350,7 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
       toggle_Cards_Off();
   }
   
-}
+};
 
 
 

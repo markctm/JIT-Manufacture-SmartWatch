@@ -49,8 +49,9 @@ void IRAM_ATTR onTimer() {
 void motor_setup( void ) {
     if ( motor_init == true )
         return;
-
+log_i("Inicialização SPIFSS 7");
     motor_read_config();
+log_i("Inicialização SPIFSS 8");
 
     pinMode(GPIO_NUM_4, OUTPUT);
     timer = timerBegin(0, 80, true);
@@ -103,21 +104,33 @@ void motor_save_config( void ) {
 
 void motor_read_config( void ) {
     fs::File file = SPIFFS.open( MOTOR_JSON_CONFIG_FILE, FILE_READ );
+
+    log_i("Inicialização SPIFSS 9");
     if (!file) {
         log_e("Can't open file: %s!", MOTOR_JSON_CONFIG_FILE );
     }
     else {
         int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
-
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("update check deserializeJson() failed: %s", error.c_str() );
+        
+        if(filesize==0)
+        {    
+             motor_config.vibe = true;      
+         }
+         else{
+            log_i("%d", filesize);
+            SpiRamJsonDocument doc( filesize * 2 );
+            
+            log_i("Inicialização SPIFSS 9");
+            DeserializationError error = deserializeJson( doc, file );
+            if ( error ) {
+                log_e("update check deserializeJson() failed: %s", error.c_str() );
+            }
+            else {
+                motor_config.vibe = doc["motor"].as<bool>();
+            }        
+            doc.clear();
         }
-        else {
-            motor_config.vibe = doc["motor"].as<bool>();
-        }        
-        doc.clear();
+    
     }
     file.close();
 }

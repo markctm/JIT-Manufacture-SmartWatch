@@ -60,10 +60,12 @@ void setup()
 
     SPIFFS.begin();
     motor_setup();
+  
 
-    // force to store all new heap allocations in psram to get more internal ram
+ // force to store all new heap allocations in psram to get more internal ram
     heap_caps_malloc_extmem_enable( 1 );
     display_setup();
+
     screenshot_setup();
 
     splash_screen_stage_one();
@@ -81,7 +83,6 @@ void setup()
             delay(3000);
             ESP.restart();
         }
-
     }
 
     splash_screen_stage_update( "init powermgm", 60 );
