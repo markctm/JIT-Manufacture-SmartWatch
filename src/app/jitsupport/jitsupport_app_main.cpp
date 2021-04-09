@@ -132,7 +132,7 @@ uint8_t atual = 0;
 char chamados[50][50];
 char bufatual [2];
 char buftotal [2];
-uint8_t num_tickets = 10;
+uint8_t num_tickets = 5;
 
 static lv_style_t stl_view;
 static lv_style_t stl_bg_card;
