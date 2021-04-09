@@ -73,14 +73,12 @@ extern int wifi_connected;
 #define MQTT_PSSWD                                  NULL
 #define MQTT_PORT                                   1883
 #define MQTT_KEEPALIVE_SECONDS                      120
-
+#define MQTT_CLEAN_SESSION                          1    
 #endif
-
 
 #define CHECK_MQTT_CONNECTION_MILLI_SECONDS          2000
 #define WIFI_TENTATIVES_TO_RECONNECT                 20                         //before go to sleep 
 
- 
 //-----WIFI--AUTHENTICATION---
 //#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
 //#define WIFI_PASSWORD     "3617970200"
@@ -96,7 +94,6 @@ extern int wifi_connected;
 //#define NO_HTTP_RESPONSE
 
 #define JABIL_SILENCE_WAKEUP_INTERVAL 3
-
 
 #ifdef __cplusplus // Allows to include config.h from C code
     #include <LilyGoWatch.h>

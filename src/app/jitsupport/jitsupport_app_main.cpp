@@ -147,7 +147,8 @@ uint8_t atual = 0;
 char chamados[50][50];
 char bufatual [2];
 char buftotal [2];
-uint8_t num_tickets = 5;
+uint8_t num_tickets = 7
+;
 
 static lv_style_t stl_view;
 static lv_style_t stl_bg_card;
@@ -418,7 +419,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
   //---- Task para Reestabelecimento da Conexão MQTT
      xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
                              "Mqtt Reconnect",                              /* Name of the task */
-                               3000,                                        /* Stack size in words */
+                              3000,                                        /* Stack size in words */
                               NULL,                                         /* Task input parameter */
                               1,                                            /* Priority of the task */
                               &_Reconnect_Task,                             /* Task handle. */
@@ -497,19 +498,6 @@ void mqtt_clear_event( EventBits_t bits ) {
     xEventGroupClearBits( xMqttEvent, bits );
     portEXIT_CRITICAL(&mqttMux);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -633,18 +621,17 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             char statusbuscado [20];
             
             strcpy(idbuscado,result["TicketId"]);
-            log_i("ID RECEBIDA:");
-            log_i("%s",idbuscado);
-                      
-            log_i("USUARIO RECEBIDO");
-            
             strcpy(userbuscado,result["UserName"]);
+
+            log_i("ID RECEBIDA:");
+            log_i("%s",idbuscado);                    
+            log_i("USUARIO RECEBIDO");     
             log_i("%s",userbuscado);
             
-            for(int z=0;z<10;z++){
-              
-              log_i("%c",userbuscado[z]);
 
+            for(int z=0;z<10;z++){  
+
+              log_i("%c",userbuscado[z]);
               if(isWhitespace(userbuscado[z])) break;            
               else nomepeq[z]=userbuscado[z];         
             }
@@ -730,11 +717,11 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             log_i("USUARIO RECEBIDO");
             
             strcpy(userbuscado,result["UserName"]);
-            log_i("%s",userbuscado);
+            //log_i("%s",userbuscado);
             
             for(int z=0;z<10;z++){
               
-              log_i("%c",userbuscado[z]);
+              //log_i("%c",userbuscado[z]);
 
               if(isWhitespace(userbuscado[z])) break;            
               else nomepeq[z]=userbuscado[z];         
@@ -748,17 +735,50 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             log_i("%s",stats);
             log_i("%s",statusbuscado);
         
-
-     
             log_i("Counter: %d",counter);
 
-            for (int i = 4; i <= ((counter*num_tickets)-3); i=i+num_tickets)
+           for (int i = 4; i <= counter*num_tickets; i=i+num_tickets)
+           {
+              log_i("%s",chamados[i]);
+              log_i("%d",i);
+
+              if(strcmp(chamados[i], idbuscado)==0){
+              log_i("Achei Meu Chamado");
+              
+              strcpy(chamados[i+1],statusbuscado);
+              strcpy(chamados[i+2],nomepeq);
+
+              atual=((i-4)/num_tickets)+1;
+              printCard(atual-1);
+
+              if(strcmp(statusbuscado,"Done")==0){
+
+                  log_i("SIM, O STATUS EH DONE!!!!!!!");
+                  removefromArray(btn2,LV_EVENT_CLICKED);
+              }
+
+              break;
+              }  
+
+           }
+           
+           
+           
+           
+           
+           
+           
+           
+           
+           
+          /*  for (int i = 4; i <= ((counter*num_tickets)-3); i=i+num_tickets)
             {
               log_i("i: ");
               log_i("%d",i);
 
               log_i("Ids: ");
               log_i("%s",chamados[i]);
+
 
               if(strcmp(chamados[i], idbuscado)==0){
 
@@ -782,7 +802,7 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
                       
               break;
               }
-            }
+            }*/
         }                    // twatch->motor->onec();         
     }
     else
@@ -926,7 +946,7 @@ void Mqtt_Reconnect(void * pvParameters)
                 log_i("MQTT reconnection...");                     
                 log_i("%s",ip_address);
 
-                if (client.connect(ip_address, MQTT_USER, MQTT_PSSWD,"status_team/16", 1, 1,"oi", 0))
+                if (client.connect(ip_address, MQTT_USER, MQTT_PSSWD,"status_team/16", 1, 1,"oi", MQTT_CLEAN_SESSION))
                 {                             
                   log_i("MQQT Connected");    
                 }
@@ -1262,12 +1282,34 @@ void printCard(uint8_t posic){
       
     }
     lv_obj_set_hidden(bg_card, false); 
-    lv_label_set_text(lbl_workstation,chamados[(posic*num_tickets)+0]);
+
+    if(posic==0)
+    {
+    lv_label_set_text(lbl_workstation,chamados[(posic*num_tickets)+0]);   //"/0/1/2/3/5/6/7" 
     lv_label_set_text(lbl_risk,chamados[(posic*num_tickets)+1]);
     lv_label_set_text(lbl_calltime,chamados[(posic*num_tickets)+2]);
     lv_label_set_text(lbl_description,chamados[(posic*num_tickets)+3]);
     lv_label_set_text(lbl_status,chamados[(posic*num_tickets)+5]);
     lv_label_set_text(lbl_user,chamados[(posic*num_tickets)+6]);
+    }
+    else 
+    {
+
+    lv_label_set_text(lbl_workstation,chamados[(posic*num_tickets)+0]);   //0/1/2/4/3/5/6      /8/9/10/11/12/13/14  + 5/6/7/8/9/10/11 + 
+    lv_label_set_text(lbl_risk,chamados[(posic*num_tickets)+1]);
+    lv_label_set_text(lbl_calltime,chamados[(posic*num_tickets)+2]);
+    lv_label_set_text(lbl_description,chamados[(posic*num_tickets)+3]);
+    lv_label_set_text(lbl_status,chamados[(posic*num_tickets)+5]);
+    lv_label_set_text(lbl_user,chamados[(posic*num_tickets)+6]);
+
+
+    }
+
+
+
+
+
+
 
     log_i("%d",atual);
     log_i("/");

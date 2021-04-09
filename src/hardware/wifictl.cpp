@@ -214,22 +214,24 @@ void wifictl_setup( void ) {
       wifictl_send_event_cb( WIFICTL_WPS_SUCCESS, (void *)"wps timeout" );
     }, WiFiEvent_t::SYSTEM_EVENT_STA_WPS_ER_TIMEOUT );
 
-    xTaskCreatePinnedToCore(  wifictl_Task,     /* Function to implement the task */
-                              "wifictl Task",   /* Name of the task */
-                              3000,             /* Stack size in words */
-                              NULL,             /* Task input parameter */
-                              3,                /* Priority of the task */
-                              &_wifictl_Task,   /* Task handle. */
+    xTaskCreatePinnedToCore(  wifictl_Task,                   /* Function to implement the task */
+                              "wifictl Task",                 /* Name of the task */
+                              3000,                           /* Stack size in words */
+                              NULL,                           /* Task input parameter */
+                              2,                              /* Priority of the task */
+                              &_wifictl_Task,                 /* Task handle. */
                               0 );
     vTaskSuspend( _wifictl_Task );
 
-  xTaskCreatePinnedToCore(    wifi_restablish_Task,     /* Function to implement the task */
+ 
+  xTaskCreatePinnedToCore(    wifi_restablish_Task,           /* Function to implement the task */
                               "wifi restablish Task",         /* Name of the task */
-                              3000,                   /* Stack size in words */
-                              NULL,                   /* Task input parameter */
-                              2,                     /* Priority of the task */
+                              3000,                           /* Stack size in words */
+                              NULL,                           /* Task input parameter */
+                              1,                              /* Priority of the task */
                               &_wifi_restabilsh_Task,         /* Task handle. */
                               0 );
+   vTaskSuspend( _wifi_restabilsh_Task );
 
     powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_event_cb, "wifictl" );
     powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_loop_event_cb, "wifictl" );
@@ -290,6 +292,7 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
               else {
                 log_w("standby blocked by \"enable on standby\" option");
                 retval = false;
+                vTaskResume(_wifi_restabilsh_Task);
               }
                 
              break;
