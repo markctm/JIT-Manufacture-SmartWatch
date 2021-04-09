@@ -223,7 +223,6 @@ void wifictl_setup( void ) {
                               0 );
     vTaskSuspend( _wifictl_Task );
 
-    delay(500);
   xTaskCreatePinnedToCore(    wifi_restablish_Task,     /* Function to implement the task */
                               "wifi restablish Task",         /* Name of the task */
                               3000,                   /* Stack size in words */
@@ -231,8 +230,6 @@ void wifictl_setup( void ) {
                               2,                     /* Priority of the task */
                               &_wifi_restabilsh_Task,         /* Task handle. */
                               0 );
-    vTaskSuspend( _wifi_restabilsh_Task);
-
 
     powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_event_cb, "wifictl" );
     powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_loop_event_cb, "wifictl" );

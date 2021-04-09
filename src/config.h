@@ -23,8 +23,8 @@
  */
 #ifndef _CONFIG_H 
 
-    #define LILYGO_WATCH_2019_WITH_TOUCH
-    //#define LILYGO_WATCH_2020_V1             //To use T-Watch2020, please uncomment this line
+    //#define LILYGO_WATCH_2019_WITH_TOUCH
+    #define LILYGO_WATCH_2020_V1             //To use T-Watch2020, please uncomment this line
     #define LILYGO_WATCH_LVGL                //To use LVGL, you need to enable the macro LVGL
     #define TWATCH_USE_PSRAM_ALLOC_LVGL
 
@@ -77,7 +77,6 @@ extern int wifi_connected;
 #endif
 
 
-
 #define CHECK_MQTT_CONNECTION_MILLI_SECONDS          2000
 #define WIFI_TENTATIVES_TO_RECONNECT                 20                         //before go to sleep 
 
@@ -94,10 +93,7 @@ extern int wifi_connected;
 
 //#define WIFI_SSID            2.4_netvirtua283bl2ap1002
 //#define WIFI_PASSWORD        3348981600
-
-
 //#define NO_HTTP_RESPONSE
-
 
 #define JABIL_SILENCE_WAKEUP_INTERVAL 3
 
