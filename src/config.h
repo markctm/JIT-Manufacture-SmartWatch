@@ -73,7 +73,7 @@ extern int wifi_connected;
 #define MQTT_PSSWD                                  NULL
 #define MQTT_PORT                                   1883
 #define MQTT_KEEPALIVE_SECONDS                      120
-#define MQTT_CLEAN_SESSION                          1    
+#define MQTT_CLEAN_SESSION                          0    
 #endif
 
 #define CHECK_MQTT_CONNECTION_MILLI_SECONDS          2000
@@ -86,12 +86,12 @@ extern int wifi_connected;
 //#define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
 //#define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
 
-#define WIFI_SSID         "JAB_RASP0001"
-#define WIFI_PASSWORD     "g4keKDI2RkXQT"
+//#define WIFI_SSID         "JAB_RASP0001"
+//#define WIFI_PASSWORD     "g4keKDI2RkXQT"
 
-//#define WIFI_SSID            2.4_netvirtua283bl2ap1002
-//#define WIFI_PASSWORD        3348981600
-//#define NO_HTTP_RESPONSE
+#define WIFI_SSID            "2.4_netvirtua283bl2ap1002"
+#define WIFI_PASSWORD        "3348981600"
+#define NO_HTTP_RESPONSE
 
 #define JABIL_SILENCE_WAKEUP_INTERVAL 3
 

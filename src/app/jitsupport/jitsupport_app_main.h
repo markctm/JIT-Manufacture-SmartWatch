@@ -8,18 +8,14 @@
     #include <TTGO.h>
     #include "hardware/callback.h"
 
-    #define MAX_NUMBER_TICKETS          10
+    #define MAX_NUMBER_TICKETS          30
     #define EMPTY                       1
     #define FULL                        0
-    #define OLD_APP_JIT   
-
+    //#define OLD_APP_JIT   
 
     #define MQTT_CONNECTED_FLAG          _BV(0)
     #define MQTT_DISCONNECTED_FLAG       _BV(1)
   
-
-
-
     void jitsupport_app_main_setup( uint32_t tile_num );
     void newticket( JsonObject jsonObj);
     
