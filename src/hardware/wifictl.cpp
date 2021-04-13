@@ -134,8 +134,6 @@ void wifictl_setup( void ) {
     }, WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
 
 
-
-
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
         wifictl_set_event( WIFICTL_ACTIVE );
         wifictl_clear_event( WIFICTL_OFF_REQUEST | WIFICTL_ON_REQUEST | WIFICTL_SCAN | WIFICTL_CONNECT | WIFICTL_WPS_REQUEST );
@@ -241,8 +239,7 @@ void wifictl_setup( void ) {
 
 
 void wifi_restablish_Task( void * pvParameters) 
-{
-    
+{ 
       while(1)
       {
               if (WiFi.status() != WL_CONNECTED)
@@ -263,6 +260,7 @@ void wifi_restablish_Task( void * pvParameters)
                 ct_Wifi_retry=0;
                 wifi_connected=1;
                 Serial.println("Wifi Reestabelecido !!");
+                 wifictl_set_event( WIFICTL_CONNECT | WIFICTL_ACTIVE );
                 vTaskSuspend( _wifi_restabilsh_Task);
               }
 
@@ -332,7 +330,7 @@ bool wifictl_powermgm_loop_event_cb( EventBits_t event, void *arg )
               {            
                   // Ajuda no quesito Desligar o SCAN do wifi imediatamente após estourar o número de tentativas
                   vTaskSuspend(_wifi_restabilsh_Task);
-                  wifictl_standby();
+                  //wifictl_standby();
                   wifi_connected=-1; // força flag do wifi (Desconectado) 
               }          
 
@@ -522,7 +520,7 @@ bool wifictl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const 
             while(true);
         }
     }    
-    return( callback_register( wifictl_callback, event, callback_func, id ) );
+    return( callback_register( wifictl_callback, event, callback_func, id ));
 }
 
 bool wifictl_send_event_cb( EventBits_t event, void *arg ) {

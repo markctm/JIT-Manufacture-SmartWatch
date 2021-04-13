@@ -62,7 +62,8 @@ void setup()
     motor_setup();
   
 
- // force to store all new heap allocations in psram to get more internal ram
+    // force to store all new heap allocations in psram to get more internal ram
+    
     heap_caps_malloc_extmem_enable( 1 );
     display_setup();
 
@@ -94,8 +95,7 @@ void setup()
     gui_setup();
 
     /*************************************************************
-       INITIALIZE APPLICATIONS 
-       
+       INITIALIZE APPLICATIONS    
         1- Jabil IT Support APP
 
      **************************************************************/
@@ -108,7 +108,8 @@ void setup()
 
 
     heap_caps_malloc_extmem_enable( 16*1024 );
-    //blectl_setup();
+    blectl_setup();
+    blectl_off();
     sound_setup();
 
     display_set_brightness( display_get_brightness() );
