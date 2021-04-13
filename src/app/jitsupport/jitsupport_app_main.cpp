@@ -35,7 +35,11 @@
 #include "ArduinoJson.h"
 #include "hardware/alloc.h"
 #include "hardware/callback.h"
-#include "hardware/wifictl.h"        
+#include "hardware/wifictl.h"     
+#include "jitsupport_mqtt.h"
+
+
+
 
 #define USE_SERIAL Serial
 
@@ -419,39 +423,43 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_label_set_text(lbl_btn_config, LV_SYMBOL_SETTINGS);
     // lv_obj_set_event_cb(btn_config, pub_mqtt);
     
-    client.setServer(mqtt_server, MQTT_PORT);
-    client.setKeepAlive(MQTT_KEEPALIVE_SECONDS);
-    client.setCallback(MQTT_callback);
 
-    xMqttEvent=xEventGroupCreate(); 
+    mqttctrl_setup();
+
+
+    //client.setServer(mqtt_server, MQTT_PORT);
+    //client.setKeepAlive(MQTT_KEEPALIVE_SECONDS);
+    //client.setCallback(MQTT_callback);
+
+   // xMqttEvent=xEventGroupCreate(); 
    
   //---- Task para Monitoração da Conexão MQTT
-     xTaskCreatePinnedToCore( Check_MQTT_Task,     /* Function to implement the task */
-                             "Mqtt CheckTask",   /* Name of the task */
-                              3000,             /* Stack size in words */
-                              NULL,             /* Task input parameter */
-                              1,                /* Priority of the task */
-                              &_mqttCheck_Task,   /* Task handle. */
-                              0 );
-     vTaskSuspend(_mqttCheck_Task);
+ //    xTaskCreatePinnedToCore( Check_MQTT_Task,     /* Function to implement the task */
+ //                            "Mqtt CheckTask",   /* Name of the task */
+  //                            3000,             /* Stack size in words */
+ ///                             NULL,             /* Task input parameter */
+ //                             1,                /* Priority of the task */
+ //                            &_mqttCheck_Task,   /* Task handle. */
+ //                             0 );
+ //    vTaskSuspend(_mqttCheck_Task);
 
   //---- Task para Reestabelecimento da Conexão MQTT
-     xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
-                             "Mqtt Reconnect",                              /* Name of the task */
-                              3000,                                        /* Stack size in words */
-                              NULL,                                         /* Task input parameter */
-                              1,                                            /* Priority of the task */
-                              &_Reconnect_Task,                             /* Task handle. */
-                              0 );
+  //   xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
+  //                           "Mqtt Reconnect",                              /* Name of the task */
+  //                            3000,                                        /* Stack size in words */
+  //                            NULL,                                         /* Task input parameter */
+  //                            1,                                            /* Priority of the task */
+  //                            &_Reconnect_Task,                             /* Task handle. */
+  //                            0 );
 
   //---- Task para GET POST USER
-     xTaskCreatePinnedToCore( Get_User,                               /* Function to implement the task */
-                             "Get User",                              /* Name of the task */
-                              3000,                                        /* Stack size in words */
-                              NULL,                                         /* Task input parameter */
-                              0,                                            /* Priority of the task */
-                              &_Get_User_Task,                             /* Task handle. */
-                              0 );
+   //  xTaskCreatePinnedToCore( Get_User,                               /* Function to implement the task */
+    //                         "Get User",                              /* Name of the task */
+    //                          3000,                                        /* Stack size in words */
+    //                          NULL,                                         /* Task input parameter */
+    //                          0,                                            /* Priority of the task */
+    //                          &_Get_User_Task,                             /* Task handle. */
+    //                          0 );
 
 
 
@@ -605,6 +613,7 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
       if (String(topic) == NomeTopicoReceber) {
             
           log_i("Aqui chegou3");
+
 #ifdef OLD_APP_JIT
             
              log_i("****VALID JSON MESSAGE *****");      
