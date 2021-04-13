@@ -12,6 +12,12 @@
     #define EMPTY                       1
     #define FULL                        0
     //#define OLD_APP_JIT   
+    //#define NO_HTTP_RESPONSE
+
+    #define VIBRATION_DISABLE               0
+    #define VIBRATION_SMOOTH                20
+    #define VIBRATION_INTENSE               70
+
 
     #define MQTT_CONNECTED_FLAG          _BV(0)
     #define MQTT_DISCONNECTED_FLAG       _BV(1)

@@ -554,11 +554,11 @@ void statusbar_wifi_event_cb( lv_obj_t *wifi, lv_event_t event ) {
     switch ( event ) {
         case ( LV_EVENT_VALUE_CHANGED ):
             switch ( lv_imgbtn_get_state( wifi ) ) {
-                case( LV_BTN_STATE_CHECKED_RELEASED ):  wifictl_off();
-                                                        wifictl_set_autoon( false );
+                case( LV_BTN_STATE_CHECKED_RELEASED ): // wifictl_off();
+                                                       // wifictl_set_autoon( false );
                                                         break;
-                case( LV_BTN_STATE_RELEASED ):          wifictl_on();
-                                                        wifictl_set_autoon( true );
+                case( LV_BTN_STATE_RELEASED ):         // wifictl_on();
+                                                       // wifictl_set_autoon( true );
                                                         break;
             }
             statusbar_refresh();
@@ -576,10 +576,10 @@ void statusbar_bluetooth_event_cb( lv_obj_t *bluetooth, lv_event_t event ) {
         case ( LV_EVENT_VALUE_CHANGED ):
             switch ( lv_imgbtn_get_state( bluetooth ) ) {
                 case( LV_BTN_STATE_CHECKED_RELEASED ):   
-                    blectl_off();
+                   // blectl_off();
                     break;
                 case( LV_BTN_STATE_RELEASED ):    
-                    blectl_on();
+                   // blectl_on();
                     break;
                 default:
                     break;

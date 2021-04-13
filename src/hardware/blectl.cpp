@@ -255,6 +255,9 @@ void blectl_setup( void ) {
                             break;
         default:            BLEDevice::setPower( ESP_PWR_LVL_N9 );
                             break;
+    
+   // blectl_off();
+    
     }
 
     // Enable encryption

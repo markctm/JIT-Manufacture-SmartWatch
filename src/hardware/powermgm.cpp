@@ -59,13 +59,10 @@ void powermgm_setup( void ) {
 
     log_i("Inicialização PMU...");
     pmu_setup();
-
     log_i("Inicialização BMA...");
     bma_setup();
     log_i("Inicialização WIFI...");
-
-    wifictl_setup();
-    
+    wifictl_setup();   
     log_i("Inicialização TOUCH...");
     touch_setup();
      log_i("Inicialização TimeSync...");

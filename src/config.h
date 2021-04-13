@@ -86,12 +86,12 @@ extern int wifi_connected;
 //#define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
 //#define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
 
-//#define WIFI_SSID         "JAB_RASP0001"
-//#define WIFI_PASSWORD     "g4keKDI2RkXQT"
+#define WIFI_SSID         "JAB_RASP0001"
+#define WIFI_PASSWORD     "g4keKDI2RkXQT"
 
-#define WIFI_SSID            "2.4_netvirtua283bl2ap1002"
-#define WIFI_PASSWORD        "3348981600"
-#define NO_HTTP_RESPONSE
+//#define WIFI_SSID            "2.4_netvirtua283bl2ap1002"
+//#define WIFI_PASSWORD        "3348981600"
+
 
 #define JABIL_SILENCE_WAKEUP_INTERVAL 3
 

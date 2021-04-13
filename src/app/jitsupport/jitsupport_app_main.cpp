@@ -34,7 +34,8 @@
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 #include "hardware/alloc.h"
-#include "hardware/callback.h"        
+#include "hardware/callback.h"
+#include "hardware/wifictl.h"        
 
 #define USE_SERIAL Serial
 
@@ -64,7 +65,7 @@ uint8_t Insere_ticket2 (Ticket_t *myticket);
 void Insere_ticket (Ticket_t myticket,Ticket_t *lista);
 void busca_ticket (Ticket_t * lista);
 uint8_t get_number_tickets();
-void printCard3(uint8_t index);
+void printCard3(uint8_t index, uint8_t vibration_intensity);
 Ticket_t *busca_ticket_index (uint8_t index);
 
 /***************Protótipos*************/
@@ -89,9 +90,10 @@ void mqtt_reconnect();
 void printCard2(Ticket_t *myticket);
 uint8_t atualiza_ticket(Ticket_t *atualiza);
 
+/**************WIFI********************/
 
-
-
+//void statusbar_wifi_event_cb( lv_obj_t *wifi, lv_event_t event );
+bool jit_wifictl_event_cb( EventBits_t event, void *arg );
 
 /*************MQTT*******************/
 
@@ -105,7 +107,7 @@ String NomeTopicoReceber="";
 String NomeTopicoAtualizar="";
 char nometopico[15];
 char atualizartopico[15];
-char payload[100];
+char payload[200];
 char nomepeq[10]= "a";
 char nomefull[100];
 
@@ -113,9 +115,11 @@ char nomefull[100];
 EventGroupHandle_t xMqttEvent=NULL;
 portMUX_TYPE DRAM_ATTR mqttMux = portMUX_INITIALIZER_UNLOCKED;
 
-TaskHandle_t _mqttCheck_Task, _Reconnect_Task;
+TaskHandle_t _mqttCheck_Task, _Reconnect_Task,_Get_User_Task=NULL;
 callback_t *mqtt_callback = NULL;
 
+
+void Get_User(void * pvParameters);
 void Check_MQTT_Task( void * pvParameters );
 void Mqtt_Reconnect( void * pvParameters );
 
@@ -285,16 +289,12 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_label_set_text(lbl_MQTT, "MQTT NOT CONNECTED !");
     lv_obj_align(lbl_MQTT, jitsupport_cont, LV_ALIGN_IN_LEFT_MID, 5, 60);
  
-    
     bg_card = lv_obj_create(jitsupport_cont, NULL);
     lv_obj_set_pos(bg_card, 10, 40);
     lv_obj_set_width(bg_card,220);
     lv_obj_set_height(bg_card,166);
-     lv_obj_add_style(bg_card, LV_OBJ_PART_MAIN, &stl_bg_card);
-
-
+    lv_obj_add_style(bg_card, LV_OBJ_PART_MAIN, &stl_bg_card);
     
-
     // WORKSTATION LABEL
      
     lbl_workstation = lv_label_create(bg_card, NULL);
@@ -433,6 +433,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               1,                /* Priority of the task */
                               &_mqttCheck_Task,   /* Task handle. */
                               0 );
+     vTaskSuspend(_mqttCheck_Task);
 
   //---- Task para Reestabelecimento da Conexão MQTT
      xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
@@ -443,9 +444,73 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               &_Reconnect_Task,                             /* Task handle. */
                               0 );
 
+  //---- Task para GET POST USER
+     xTaskCreatePinnedToCore( Get_User,                               /* Function to implement the task */
+                             "Get User",                              /* Name of the task */
+                              3000,                                        /* Stack size in words */
+                              NULL,                                         /* Task input parameter */
+                              0,                                            /* Priority of the task */
+                              &_Get_User_Task,                             /* Task handle. */
+                              0 );
+
+
 
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_loop_cb, "jitsupport app loop" );
+   wifictl_register_cb( WIFICTL_CONNECT | WIFICTL_DISCONNECT | WIFICTL_OFF | WIFICTL_ON | WIFICTL_SCAN | WIFICTL_WPS_SUCCESS | WIFICTL_WPS_FAILED | WIFICTL_CONNECT_IP, jit_wifictl_event_cb, "JIT Wifi Event" );
+}
 
+
+void Get_User(void * pvParameters)
+{
+
+  uint8_t aux=0;
+  log_i("Inicialização de Procura do User");
+  while(1)
+  {   
+          
+          if(wifictl_get_event( WIFICTL_CONNECT ))
+          {
+
+            //log_i("Ta rolando conexão");
+            if(!pegueiUser)getWatchUser();
+            else{  
+            
+              if(aux!=1)
+              {
+                log_i("User Found.. Connecting MQTT... Deleting Task...");
+                vTaskResume(_mqttCheck_Task);
+                vTaskDelete(NULL);        
+              }
+              aux=1;
+              //vTaskDelete(_Get_User_Task);
+            }  
+          }
+          else log_i("Não ta rolando WIFI");     
+
+     // }
+
+      vTaskDelay(2000/ portTICK_PERIOD_MS );
+  }
+
+}
+
+bool jit_wifictl_event_cb( EventBits_t event, void *arg ) {
+    switch( event ) {
+        case WIFICTL_CONNECT:
+
+        log_i("AI CONNECTED");
+
+        break;
+
+
+        default:
+        
+        log_i("AI DISCONNECTED");
+
+        break;
+        
+        }
+        return true ;
 }
 
 
@@ -572,7 +637,7 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
               atual = get_number_tickets();
 
               //printCard2(&myticket);
-              printCard3(atual-1);
+              printCard3(atual-1,VIBRATION_INTENSE);
 
               toggle_Cards_On();
             }
@@ -647,7 +712,7 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
           {
               log_i("Entrei aqui");
               uint8_t index = atualiza_ticket(&atualiza);
-              if(index>=0) printCard3(index);
+              if(index>=0) printCard3(index,VIBRATION_INTENSE);
           
               if(strcmp(atualiza.status,"Done")==0){
 
@@ -824,9 +889,9 @@ void Check_MQTT_Task(void * pvParameters ){
                log_i("%s", nometopico);
                log_i("%s", atualizartopico);
               
-              
-              if(nometopico=="")break;
-              if(atualizartopico=="")break;
+              // Proteção 
+              if(strcmp(nometopico,"")==0)break;
+              if(strcmp(atualizartopico,"")==0)break;
               
               client.subscribe(nometopico,1);
               client.subscribe(atualizartopico,1);
@@ -1190,16 +1255,15 @@ void busca_ticket (Ticket_t *lista)
 //----------------APP FUNCTIONS---------------------------- 
 
 
-
 void getWatchUser(){
 
-    pegueiUser = true;
     meuip = WiFi.localIP().toString();
     meuip.toCharArray(ip_address,15);
 
     log_i("MEU IP É O SEGUINTE: %s",ip_address);
     lv_label_set_text(lbl_IP,ip_address);
 
+    strcpy(GetWatchById_Url,"");
     strcat(GetWatchById_Url, GetWatchById_host);
     strcat(GetWatchById_Url, ip_address);
     
@@ -1224,6 +1288,7 @@ void getWatchUser(){
       strcpy(nomefull,"Mark Carmo Testi Moreira");
       //client.subscribe(nometopico);
       //client.subscribe(atualizartopico);
+      pegueiUser = true;   
 
       return;
 
@@ -1272,7 +1337,8 @@ void getWatchUser(){
                 strcpy(nomefull,text);
                 log_i("%d",id);
                 log_i("%s",text);
-                lv_label_set_text(lbl_RSSI,text);              
+                lv_label_set_text(lbl_RSSI,text);
+                pegueiUser = true;              
                 
               } else {
                   log_i("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
@@ -1317,7 +1383,7 @@ void printCard2(Ticket_t *myticket){
 }
 
 
-void printCard3(uint8_t index){
+void printCard3(uint8_t index, uint8_t vibration_intensity){
 
     lv_obj_set_hidden(bg_card, true); 
 
@@ -1339,7 +1405,7 @@ void printCard3(uint8_t index){
     lv_label_set_text(lbl_totalcard,buftotal);
 
     powermgm_set_event(POWERMGM_WAKEUP_REQUEST);
-    motor_vibe(70);       
+    motor_vibe(vibration_intensity);       
     mainbar_jump_to_tilenumber( jitsupport_app_get_app_main_tile_num(), LV_ANIM_OFF );
     statusbar_hide(true);
 
@@ -1533,7 +1599,7 @@ static void removefromArray(lv_obj_t *obj, lv_event_t event){
 
     remove_ticket(&all_Tickets[atual-1]);
     atual=get_number_tickets();
-    printCard3(atual-1);
+    printCard3(atual-1,VIBRATION_INTENSE);
 
     if(get_number_tickets()==0){
       log_i("Number Tickets=0");
@@ -1556,7 +1622,7 @@ static void btn1_handler(lv_obj_t *obj, lv_event_t event)
         log_i("/");
         log_i("%d",counter);
 
-      printCard3(atual-1);
+      printCard3(atual-1,VIBRATION_DISABLE);
     }    
 }
 
@@ -1572,7 +1638,7 @@ static void btn2_handler(lv_obj_t *obj, lv_event_t event)
         log_i("%d",atual);
         log_i("/");
         log_i("%d",counter);
-        printCard3(atual-1);
+        printCard3(atual-1,VIBRATION_DISABLE);
     }
    
     
@@ -1598,7 +1664,7 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
   
       log_i("Request que vou fazer:");
       log_i("%s",requestBody);
-      requestBody.toCharArray(payload,100);
+      requestBody.toCharArray(payload,200);
       client.publish(atualizartopico, payload);
 
   }
