@@ -273,6 +273,30 @@ void pmu_read_config( void ) {
     }
     else {
         int filesize = file.size();
+       
+       if(filesize==0){
+
+            pmu_config.silence_wakeup = false;
+
+#ifdef      JABIL_SILENCE_WAKEUP_INTERVAL
+            pmu_config.silence_wakeup_interval =  JABIL_SILENCE_WAKEUP_INTERVAL;
+#else
+            pmu_config.silence_wakeup_interval = doc["silence_wakeup_interval"] | SILENCEWAKEINTERVAL;      
+#endif
+            pmu_config.silence_wakeup_interval_vbplug = SILENCEWAKEINTERVAL_PLUG;
+            pmu_config.experimental_power_save = false;
+            pmu_config.compute_percent = false;
+            pmu_config.high_charging_target_voltage = false;
+            pmu_config.designed_battery_cap = 380;
+            pmu_config.normal_voltage = NORMALVOLTAGE;
+            pmu_config.normal_power_save_voltage = NORMALPOWERSAVEVOLTAGE;
+            pmu_config.experimental_normal_voltage = EXPERIMENTALNORMALVOLTAGE;
+            pmu_config.experimental_power_save_voltage =  EXPERIMENTALPOWERSAVEVOLTAGE;
+
+       }
+       else 
+       {
+             
         SpiRamJsonDocument doc( filesize * 2 );
 
         DeserializationError error = deserializeJson( doc, file );
@@ -298,6 +322,7 @@ void pmu_read_config( void ) {
             pmu_config.experimental_power_save_voltage = doc["experimental_power_save_voltage"] | EXPERIMENTALPOWERSAVEVOLTAGE;
         }        
         doc.clear();
+    }
     }
     file.close();
 }

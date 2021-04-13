@@ -47,6 +47,12 @@
 #include "gui/mainbar/setup_tile/wlan_settings/wlan_settings.h"
 #include "gui/mainbar/setup_tile/bluetooth_settings/bluetooth_settings.h"
 
+
+#include "app/jitsupport/jitsupport_app_main.h"
+
+
+
+
 static lv_obj_t *statusbar = NULL;
 static lv_obj_t *statusbar_wifi = NULL;
 static lv_obj_t *statusbar_wifilabel = NULL;
@@ -87,6 +93,7 @@ void statusbar_bluetooth_event_cb( lv_obj_t *bluetooth, lv_event_t event );
 void statusbar_volume_slider_event_handler_cb( lv_obj_t *sound_slider, lv_event_t event );
 void statusbar_brightness_slider_event_handler_cb( lv_obj_t *brightness_slider, lv_event_t event );
 
+
 bool statusbar_soundctl_event_cb( EventBits_t event, void *arg );
 bool statusbar_blectl_event_cb( EventBits_t event, void *arg );
 bool statusbar_wifictl_event_cb( EventBits_t event, void *arg );
@@ -94,6 +101,10 @@ bool statusbar_rtcctl_event_cb( EventBits_t event, void *arg );
 bool statusbar_bmactl_event_cb( EventBits_t event, void *arg );
 bool statusbar_pmuctl_event_cb( EventBits_t event, void *arg );
 bool statusbar_displayctl_event_cb( EventBits_t event, void *arg );
+
+bool statusbar_mqtt_event_cb( EventBits_t event, void *arg );
+
+
 
 void statusbar_wifi_set_state( bool state, const char *wifiname );
 void statusbar_wifi_set_ip_state( bool state, const char *ip );
@@ -281,6 +292,9 @@ void statusbar_setup( void )
     sound_register_cb( SOUNDCTL_ENABLED | SOUNDCTL_VOLUME, statusbar_soundctl_event_cb, "statusbar sound");
     display_register_cb( DISPLAYCTL_BRIGHTNESS, statusbar_displayctl_event_cb, "statusbar display" );
 
+    mqtt_register_cb( MQTT_CONNECTED_FLAG | MQTT_DISCONNECTED_FLAG, statusbar_mqtt_event_cb, "statusbar mqtt" );
+
+
     lv_slider_set_value( statusbar_brightness_slider, display_get_brightness(), LV_ANIM_OFF );
     lv_slider_set_value( statusbar_volume_slider, sound_get_volume_config(), LV_ANIM_OFF );
 
@@ -456,6 +470,60 @@ bool statusbar_wifictl_event_cb( EventBits_t event, void *arg ) {
     return( true );
 }
 
+bool statusbar_mqtt_event_cb( EventBits_t event, void *arg ) {
+
+switch( event ) {
+        case MQTT_CONNECTED_FLAG:       
+   
+                            log_i("oi mqtt deu bom");
+                                    break;
+        case MQTT_DISCONNECTED_FLAG:    
+      
+                            log_i("oi mqtt deu ruim");
+                                    break;
+}
+
+
+
+    statusbar_refresh();
+    return( true );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void statusbar_volume_slider_event_handler_cb(lv_obj_t *volume_slider, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) {
@@ -486,11 +554,11 @@ void statusbar_wifi_event_cb( lv_obj_t *wifi, lv_event_t event ) {
     switch ( event ) {
         case ( LV_EVENT_VALUE_CHANGED ):
             switch ( lv_imgbtn_get_state( wifi ) ) {
-                case( LV_BTN_STATE_CHECKED_RELEASED ):  wifictl_off();
-                                                        wifictl_set_autoon( false );
+                case( LV_BTN_STATE_CHECKED_RELEASED ): // wifictl_off();
+                                                       // wifictl_set_autoon( false );
                                                         break;
-                case( LV_BTN_STATE_RELEASED ):          wifictl_on();
-                                                        wifictl_set_autoon( true );
+                case( LV_BTN_STATE_RELEASED ):         // wifictl_on();
+                                                       // wifictl_set_autoon( true );
                                                         break;
             }
             statusbar_refresh();
@@ -508,10 +576,10 @@ void statusbar_bluetooth_event_cb( lv_obj_t *bluetooth, lv_event_t event ) {
         case ( LV_EVENT_VALUE_CHANGED ):
             switch ( lv_imgbtn_get_state( bluetooth ) ) {
                 case( LV_BTN_STATE_CHECKED_RELEASED ):   
-                    blectl_off();
+                   // blectl_off();
                     break;
                 case( LV_BTN_STATE_RELEASED ):    
-                    blectl_on();
+                   // blectl_on();
                     break;
                 default:
                     break;

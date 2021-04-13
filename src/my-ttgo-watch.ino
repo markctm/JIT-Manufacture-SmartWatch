@@ -60,10 +60,13 @@ void setup()
 
     SPIFFS.begin();
     motor_setup();
+  
 
     // force to store all new heap allocations in psram to get more internal ram
+    
     heap_caps_malloc_extmem_enable( 1 );
     display_setup();
+
     screenshot_setup();
 
     splash_screen_stage_one();
@@ -81,7 +84,6 @@ void setup()
             delay(3000);
             ESP.restart();
         }
-
     }
 
     splash_screen_stage_update( "init powermgm", 60 );
@@ -93,8 +95,7 @@ void setup()
     gui_setup();
 
     /*************************************************************
-       INITIALIZE APPLICATIONS 
-       
+       INITIALIZE APPLICATIONS    
         1- Jabil IT Support APP
 
      **************************************************************/
@@ -107,7 +108,8 @@ void setup()
 
 
     heap_caps_malloc_extmem_enable( 16*1024 );
-    //blectl_setup();
+    blectl_setup();
+    blectl_off();
     sound_setup();
 
     display_set_brightness( display_get_brightness() );
