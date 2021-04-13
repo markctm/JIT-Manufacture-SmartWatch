@@ -134,8 +134,6 @@ void wifictl_setup( void ) {
     }, WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
 
 
-
-
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
         wifictl_set_event( WIFICTL_ACTIVE );
         wifictl_clear_event( WIFICTL_OFF_REQUEST | WIFICTL_ON_REQUEST | WIFICTL_SCAN | WIFICTL_CONNECT | WIFICTL_WPS_REQUEST );
@@ -214,25 +212,24 @@ void wifictl_setup( void ) {
       wifictl_send_event_cb( WIFICTL_WPS_SUCCESS, (void *)"wps timeout" );
     }, WiFiEvent_t::SYSTEM_EVENT_STA_WPS_ER_TIMEOUT );
 
-    xTaskCreatePinnedToCore(  wifictl_Task,     /* Function to implement the task */
-                              "wifictl Task",   /* Name of the task */
-                              3000,             /* Stack size in words */
-                              NULL,             /* Task input parameter */
-                              3,                /* Priority of the task */
-                              &_wifictl_Task,   /* Task handle. */
+    xTaskCreatePinnedToCore(  wifictl_Task,                   /* Function to implement the task */
+                              "wifictl Task",                 /* Name of the task */
+                              3000,                           /* Stack size in words */
+                              NULL,                           /* Task input parameter */
+                              2,                              /* Priority of the task */
+                              &_wifictl_Task,                 /* Task handle. */
                               0 );
     vTaskSuspend( _wifictl_Task );
 
-    delay(500);
-  xTaskCreatePinnedToCore(    wifi_restablish_Task,     /* Function to implement the task */
+ 
+  xTaskCreatePinnedToCore(    wifi_restablish_Task,           /* Function to implement the task */
                               "wifi restablish Task",         /* Name of the task */
-                              3000,                   /* Stack size in words */
-                              NULL,                   /* Task input parameter */
-                              2,                     /* Priority of the task */
+                              3000,                           /* Stack size in words */
+                              NULL,                           /* Task input parameter */
+                              1,                              /* Priority of the task */
                               &_wifi_restabilsh_Task,         /* Task handle. */
                               0 );
-    vTaskSuspend( _wifi_restabilsh_Task);
-
+   vTaskSuspend( _wifi_restabilsh_Task );
 
     powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_event_cb, "wifictl" );
     powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, wifictl_powermgm_loop_event_cb, "wifictl" );
@@ -242,8 +239,7 @@ void wifictl_setup( void ) {
 
 
 void wifi_restablish_Task( void * pvParameters) 
-{
-    
+{ 
       while(1)
       {
               if (WiFi.status() != WL_CONNECTED)
@@ -264,10 +260,11 @@ void wifi_restablish_Task( void * pvParameters)
                 ct_Wifi_retry=0;
                 wifi_connected=1;
                 Serial.println("Wifi Reestabelecido !!");
+                 wifictl_set_event( WIFICTL_CONNECT | WIFICTL_ACTIVE );
                 vTaskSuspend( _wifi_restabilsh_Task);
               }
 
-        vTaskDelay(500/ portTICK_PERIOD_MS ); 
+        vTaskDelay(1000/ portTICK_PERIOD_MS ); 
       }     
 }
 
@@ -293,6 +290,7 @@ bool wifictl_powermgm_event_cb( EventBits_t event, void *arg ) {
               else {
                 log_w("standby blocked by \"enable on standby\" option");
                 retval = false;
+                vTaskResume(_wifi_restabilsh_Task);
               }
                 
              break;
@@ -332,7 +330,7 @@ bool wifictl_powermgm_loop_event_cb( EventBits_t event, void *arg )
               {            
                   // Ajuda no quesito Desligar o SCAN do wifi imediatamente após estourar o número de tentativas
                   vTaskSuspend(_wifi_restabilsh_Task);
-                  wifictl_standby();
+                  //wifictl_standby();
                   wifi_connected=-1; // força flag do wifi (Desconectado) 
               }          
 
@@ -389,39 +387,64 @@ void wifictl_load_config( void ) {
     }
     else {
         int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
 
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("update check deserializeJson() failed: %s", error.c_str() );
-        }
-        else {
-            wifictl_config.autoon = doc["autoon"] | true;
+        if (filesize==0)
+        {
+
+            wifictl_config.autoon =  true;
             #ifdef ENABLE_WEBSERVER
-            wifictl_config.webserver = doc["webserver"] | false;
+            wifictl_config.webserver = false;
             #endif
             #ifdef ENABLE_FTPSERVER
-            wifictl_config.ftpserver = doc["ftpserver"] | false;
-            
-            if ( doc["ftpuser"] )
-              strlcpy( wifictl_config.ftpuser, doc["ftpuser"], sizeof( wifictl_config.ftpuser ) );
-            else
+            wifictl_config.ftpserver = false;
               strlcpy( wifictl_config.ftpuser, FTPSERVER_USER, sizeof( wifictl_config.ftpuser ) );
-            if ( doc["ftppass"] )
-              strlcpy( wifictl_config.ftppass, doc["ftppass"], sizeof( wifictl_config.ftppass ) );
-            else
               strlcpy( wifictl_config.ftppass, FTPSERVER_PASSWORD, sizeof( wifictl_config.ftppass ) );
             #endif
 
-            wifictl_config.enable_on_standby = doc["enable_on_standby"] | false;
-            for ( int i = 0 ; i < NETWORKLIST_ENTRYS ; i++ ) {
+            wifictl_config.enable_on_standby = true;
+            /*for ( int i = 0 ; i < NETWORKLIST_ENTRYS ; i++ ) {
                 if ( doc["networklist"][ i ]["ssid"] && doc["networklist"][ i ]["psk"] ) {
-                    strlcpy( wifictl_networklist[ i ].ssid    , doc["networklist"][ i ]["ssid"], sizeof( wifictl_networklist[ i ].ssid ) );
-                    strlcpy( wifictl_networklist[ i ].password, doc["networklist"][ i ]["psk"], sizeof( wifictl_networklist[ i ].password ) );
+                    strlcpy( wifictl_networklist[ i ].ssid    , "", sizeof( wifictl_networklist[ i ].ssid ) );
+                    strlcpy( wifictl_networklist[ i ].password, "", sizeof( wifictl_networklist[ i ].password ) );
                 }
+            }*/
+
+        }
+        else
+        {
+            SpiRamJsonDocument doc( filesize * 2 );
+            DeserializationError error = deserializeJson( doc, file );
+            if ( error ) {
+                log_e("update check deserializeJson() failed: %s", error.c_str() );
             }
-        }        
-        doc.clear();
+            else {
+                wifictl_config.autoon = doc["autoon"] | true;
+                #ifdef ENABLE_WEBSERVER
+                wifictl_config.webserver = doc["webserver"] | false;
+                #endif
+                #ifdef ENABLE_FTPSERVER
+                wifictl_config.ftpserver = doc["ftpserver"] | false;
+                
+                if ( doc["ftpuser"] )
+                  strlcpy( wifictl_config.ftpuser, doc["ftpuser"], sizeof( wifictl_config.ftpuser ) );
+                else
+                  strlcpy( wifictl_config.ftpuser, FTPSERVER_USER, sizeof( wifictl_config.ftpuser ) );
+                if ( doc["ftppass"] )
+                  strlcpy( wifictl_config.ftppass, doc["ftppass"], sizeof( wifictl_config.ftppass ) );
+                else
+                  strlcpy( wifictl_config.ftppass, FTPSERVER_PASSWORD, sizeof( wifictl_config.ftppass ) );
+                #endif
+
+                wifictl_config.enable_on_standby = doc["enable_on_standby"] | false;
+                for ( int i = 0 ; i < NETWORKLIST_ENTRYS ; i++ ) {
+                    if ( doc["networklist"][ i ]["ssid"] && doc["networklist"][ i ]["psk"] ) {
+                        strlcpy( wifictl_networklist[ i ].ssid    , doc["networklist"][ i ]["ssid"], sizeof( wifictl_networklist[ i ].ssid ) );
+                        strlcpy( wifictl_networklist[ i ].password, doc["networklist"][ i ]["psk"], sizeof( wifictl_networklist[ i ].password ) );
+                    }
+                }
+            }        
+            doc.clear();
+      }
     }
     file.close();
 }
@@ -497,7 +520,7 @@ bool wifictl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const 
             while(true);
         }
     }    
-    return( callback_register( wifictl_callback, event, callback_func, id ) );
+    return( callback_register( wifictl_callback, event, callback_func, id ));
 }
 
 bool wifictl_send_event_cb( EventBits_t event, void *arg ) {

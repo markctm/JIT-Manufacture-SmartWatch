@@ -1,0 +1,18 @@
+
+#include "AsyncJson.h"
+#include "ArduinoJson.h"
+
+#ifndef _JITSUPPORT_APP_MAIN_H
+    #define _JITSUPPORT_APP_MAIN_H
+
+    #include <TTGO.h>
+
+
+
+
+void mqtt_setup(); 
+
+    
+
+    
+#endif // _JITSUPPORT_APP_MAIN_H

@@ -172,20 +172,33 @@ void display_read_config( void ) {
     }
     else {
         int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 2 );
-
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("update check deserializeJson() failed: %s", error.c_str() );
+        
+        if(filesize==0)
+        {
+              display_config.brightness = DISPLAY_MAX_BRIGHTNESS / 2;
+              display_config.rotation = DISPLAY_MIN_ROTATE;
+              display_config.timeout =DISPLAY_MIN_TIMEOUT;
+              display_config.block_return_maintile = false;
+              display_config.background_image = 2; 
+         
+         }
+         else{
+         
+          SpiRamJsonDocument doc( filesize * 2 );
+          DeserializationError error = deserializeJson( doc, file );
+          if ( error ) {
+              log_e("update check deserializeJson() failed: %s", error.c_str() );
+          }
+          else {
+              display_config.brightness = doc["brightness"] | DISPLAY_MAX_BRIGHTNESS / 2;
+              display_config.rotation = doc["rotation"] | DISPLAY_MIN_ROTATE;
+              display_config.timeout = doc["timeout"] | DISPLAY_MIN_TIMEOUT;
+              display_config.block_return_maintile = doc["block_return_maintile"] | false;
+              display_config.background_image = doc["background_image"] | 2;
+          }        
+          doc.clear();
         }
-        else {
-            display_config.brightness = doc["brightness"] | DISPLAY_MAX_BRIGHTNESS / 2;
-            display_config.rotation = doc["rotation"] | DISPLAY_MIN_ROTATE;
-            display_config.timeout = doc["timeout"] | DISPLAY_MIN_TIMEOUT;
-            display_config.block_return_maintile = doc["block_return_maintile"] | false;
-            display_config.background_image = doc["background_image"] | 2;
-        }        
-        doc.clear();
+
     }
     file.close();
 }

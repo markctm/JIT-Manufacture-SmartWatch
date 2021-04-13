@@ -56,13 +56,20 @@ void powermgm_setup( void ) {
 
     powermgm_status = xEventGroupCreate();
 
+
+    log_i("Inicialização PMU...");
     pmu_setup();
+    log_i("Inicialização BMA...");
     bma_setup();
-    wifictl_setup();
+    log_i("Inicialização WIFI...");
+    wifictl_setup();   
+    log_i("Inicialização TOUCH...");
     touch_setup();
+     log_i("Inicialização TimeSync...");
     timesync_setup();
     //rtcctl_setup();
     //blectl_read_config();
+    log_i("Inicialização Sound Read...");
     sound_read_config();
     
     powermgm_set_event( POWERMGM_WAKEUP );

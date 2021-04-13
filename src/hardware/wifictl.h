@@ -198,5 +198,7 @@
      */
     bool wifictl_get_enable_on_standby( void );
 
+    bool wifictl_get_event( EventBits_t bits );
+
 
 #endif // _WIFICTL_H

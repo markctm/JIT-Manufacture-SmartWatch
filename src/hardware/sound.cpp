@@ -236,17 +236,25 @@ void sound_read_config( void ) {
     }
     else {
         int filesize = file.size();
-        SpiRamJsonDocument doc( filesize * 4 );
-
-        DeserializationError error = deserializeJson( doc, file );
-        if ( error ) {
-            log_e("sound config deserializeJson() failed: %s", error.c_str() );
+        
+        if(filesize==0)
+        {
+            sound_config.enable =  false;
+            sound_config.volume =  100;
         }
-        else {
-            sound_config.enable = doc["enable"] | false;
-            sound_config.volume = doc["volume"] | 100;
-        }        
-        doc.clear();
+        else
+        {
+            SpiRamJsonDocument doc( filesize * 4 );
+            DeserializationError error = deserializeJson( doc, file );
+            if ( error ) {
+                log_e("sound config deserializeJson() failed: %s", error.c_str() );
+            }
+            else {
+                sound_config.enable = doc["enable"] | false;
+                sound_config.volume = doc["volume"] | 100;
+            }        
+            doc.clear();
+        }
     }
     file.close();
 }
