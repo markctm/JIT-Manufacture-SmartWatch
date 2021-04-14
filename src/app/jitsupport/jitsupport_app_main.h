@@ -8,22 +8,26 @@
     #include <TTGO.h>
     #include "hardware/callback.h"
 
-    #define MAX_NUMBER_TICKETS          30
-    #define EMPTY                       1
-    #define FULL                        0
+    #define MAX_NUMBER_TICKETS              30
+    #define EMPTY                           1
+    #define FULL                            0
     //#define OLD_APP_JIT   
-    //#define NO_HTTP_RESPONSE
+    #define NO_HTTP_RESPONSE
 
     #define VIBRATION_DISABLE               0
     #define VIBRATION_SMOOTH                20
     #define VIBRATION_INTENSE               70
 
 
-    #define MQTT_CONNECTED_FLAG          _BV(0)
-    #define MQTT_DISCONNECTED_FLAG       _BV(1)
-  
     void jitsupport_app_main_setup( uint32_t tile_num );
     void newticket( JsonObject jsonObj);
+    
+    
+    
+
+    
+    void MQTT_callback(char* topic, byte* message, unsigned int length);
+    void MQTT2_publish(char *atualizartopico, char *payload);
     
     /*
     * @brief registers a callback function which is called on a corresponding event

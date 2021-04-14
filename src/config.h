@@ -53,8 +53,9 @@ extern int wifi_connected;
 
 
 //------MQTT---CONNECTION------
-#define MQTT_BROKER_MOSQUITTO                        
-// #define MQTT_BROKER_CLOUD                                                          
+//#define MQTT_BROKER_MOSQUITTO                        
+#define MQTT_BROKER_CLOUD    
+//#define MQTT_BROKER_JABIL
 
 #ifdef  MQTT_BROKER_CLOUD                                
 
@@ -63,6 +64,7 @@ extern int wifi_connected;
 #define MQTT_PSSWD                                  "KhwBxhvkWZFq"
 #define MQTT_PORT                                   10304
 #define MQTT_KEEPALIVE_SECONDS                      120
+#define MQTT_CLEAN_SESSION                          0  
 
 #endif
 
@@ -76,6 +78,17 @@ extern int wifi_connected;
 #define MQTT_CLEAN_SESSION                          0    
 #endif
 
+#ifdef  MQTT_BROKER_JABIL                                
+
+#define MQTT_SERVER                                 "brbelm0mat81.corp.jabil.org"
+#define MQTT_USER                                   NULL
+#define MQTT_PSSWD                                  NULL
+#define MQTT_PORT                                   1883
+#define MQTT_KEEPALIVE_SECONDS                      120
+#define MQTT_CLEAN_SESSION                          1    
+#endif
+
+
 #define CHECK_MQTT_CONNECTION_MILLI_SECONDS          2000
 #define WIFI_TENTATIVES_TO_RECONNECT                 20                         //before go to sleep 
 
@@ -83,11 +96,11 @@ extern int wifi_connected;
 //#define WIFI_SSID         "2.4 CLARO VIRTUA 15 CS 2"
 //#define WIFI_PASSWORD     "3617970200"
 
-//#define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
-//#define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
+#define WIFI_SSID         "TooPrede"                     /** @brief define SSID DA REDE */
+#define WIFI_PASSWORD     "12345678"                     /** @brief Password  */
 
-#define WIFI_SSID         "JAB_RASP0001"
-#define WIFI_PASSWORD     "g4keKDI2RkXQT"
+//#define WIFI_SSID         "JAB_RASP0001"
+//#define WIFI_PASSWORD     "g4keKDI2RkXQT"
 
 //#define WIFI_SSID            "2.4_netvirtua283bl2ap1002"
 //#define WIFI_PASSWORD        "3348981600"

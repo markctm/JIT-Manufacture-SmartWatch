@@ -26,7 +26,7 @@
     #include "config.h"
 
     #define STATUSBAR_HEIGHT            26
-    #define STATUSBAR_EXPAND_HEIGHT     200
+    #define STATUSBAR_EXPAND_HEIGHT     250
 
     typedef struct {
         lv_obj_t *icon;
@@ -44,6 +44,8 @@
         STATUSBAR_BELL,
         STATUSBAR_WARNING,
         STATUSBAR_ALARM,
+        STATUSBAR_MQTT_OK,
+        STATUSBAR_MQTT_NOK,
         STATUSBAR_NUM
     } statusbar_icon_t;
     
