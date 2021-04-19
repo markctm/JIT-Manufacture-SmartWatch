@@ -106,7 +106,7 @@ extern volatile int wifi_connected;
 //#define WIFI_PASSWORD        "3348981600"
 
 
-#define JABIL_SILENCE_WAKEUP_INTERVAL 3
+#define JABIL_SILENCE_WAKEUP_INTERVAL                       5
 
 #ifdef __cplusplus // Allows to include config.h from C code
     #include <LilyGoWatch.h>

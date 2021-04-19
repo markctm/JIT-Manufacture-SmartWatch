@@ -1321,17 +1321,12 @@ void show_watch_status(lv_obj_t *obj, lv_event_t event){
 
 if (event == LV_EVENT_CLICKED) {
 
+        if(get_number_tickets()>0)
+        {
+          lv_obj_set_hidden(bg_card,!lv_obj_get_hidden(bg_card)); 
 
-      if(aux==true)
-      {
-        lv_obj_set_hidden(bg_card, true); 
-        aux=false;
-      }
-      else{
-        lv_obj_set_hidden(bg_card, false); 
-        aux=true;
+        }  
 
-      }
 }
 
 }
