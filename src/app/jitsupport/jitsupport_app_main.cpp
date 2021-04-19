@@ -65,12 +65,14 @@ Ticket_t  myticket;
 
 //----A fazer ainda ------
 typedef struct{
-  char  userName[30];
-  char  team_ID[10];
-} User_t;
+  char  Member_Name[30];
+  bool  online=false;
+  uint8_t  state=EMPTY;
+} Team_t;
 
+Team_t Team_Members[10];
 
-//----------------Prototipos----------------
+//------Prototipos---JIT APP---
 
 Ticket_t *remove_ticket(Ticket_t *ticket_remover);
 Ticket_t *busca_ticket2 (Ticket_t *myticket);
@@ -79,9 +81,6 @@ void Insere_ticket (Ticket_t myticket,Ticket_t *lista);
 void busca_ticket (Ticket_t * lista);
 uint8_t get_number_tickets();
 void printCard3(uint8_t index, uint8_t vibration_intensity);
-Ticket_t *busca_ticket_index (uint8_t index);
-
-void MQTT_callback(char* topic, byte* message, unsigned int length);
 static void removefromArray(lv_obj_t *obj, lv_event_t event);
 void getWatchUser();
 void sendRequest(lv_obj_t *obj, lv_event_t event);
@@ -89,20 +88,24 @@ static void toggle_Cards_Off();
 static void toggle_Cards_On();
 static void btn2_handler(lv_obj_t *obj, lv_event_t event);
 static void btn1_handler(lv_obj_t *obj, lv_event_t event);
-
-bool jitsupport_mqttctrl_event_cb(EventBits_t event, void *arg );
-
-static void pub_mqtt(lv_obj_t *obj, lv_event_t event);
+Ticket_t *busca_ticket_index (uint8_t index);
 static void exit_jitsupport_app_main_event_cb( lv_obj_t * obj, lv_event_t event );
-void printCard(uint8_t posic);
-void mqtt_reconnect();
 uint8_t atualiza_ticket(Ticket_t *atualiza);
 void sendCanceled(lv_obj_t *obj, lv_event_t event);
 void show_watch_status(lv_obj_t *obj, lv_event_t event);
+void Get_TeamMembers(void * pvParameters);
 
-//---------------WIFI---------------------
+//------Prototipos--WIFI------
 
 bool jit_wifictl_event_cb( EventBits_t event, void *arg );
+
+
+//------Prototipos--MQTT----
+
+void MQTT_callback(char* topic, byte* message, unsigned int length);
+bool jitsupport_mqttctrl_event_cb(EventBits_t event, void *arg );
+static void pub_mqtt(lv_obj_t *obj, lv_event_t event);
+void mqtt_reconnect();
 
 
 //---------------MQTT---------------------
@@ -111,11 +114,7 @@ const char* mqtt_server = MQTT_SERVER;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-
-
-
 bool once_flag=false;
-
 uint8_t idTeam;
 String NomeTopicoReceber="";
 String NomeTopicoAtualizar="";
@@ -125,18 +124,16 @@ char payload[200];
 char nomepeq[10]= "a";
 char nomefull[100];
 
-
-
 EventGroupHandle_t xMqttEvent=NULL;
 portMUX_TYPE DRAM_ATTR mqttMux = portMUX_INITIALIZER_UNLOCKED;
-TaskHandle_t _mqttCheck_Task, _Reconnect_Task,_Get_User_Task=NULL;
+TaskHandle_t _mqttCheck_Task, _Reconnect_Task,_Get_User_Task,_Get_TeamMembers_Task=NULL;
 callback_t *mqtt_callback = NULL;
 
+void Get_User(void * pvParameters);
 void Get_User(void * pvParameters);
 void Check_MQTT_Task( void * pvParameters );
 void Mqtt_Reconnect( void * pvParameters );
 bool mqtt_send_event_cb( EventBits_t event, void *arg);
-
 
 
 
@@ -322,8 +319,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_label_set_text(lbl_workstation, "WORKSTATION");
     lv_obj_align(lbl_workstation, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
 
-
-  // CALL TIME LABEL
+   // CALL TIME LABEL
     
     lbl_calltime = lv_label_create(bg_card, NULL);
     lv_label_set_text(lbl_calltime, "12: 00");
@@ -490,6 +486,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_add_style(btn_team, LV_OBJ_PART_MAIN, &stl_transp);
     lbl_btn_team = lv_label_create(btn_team, NULL);
     lv_label_set_text(lbl_btn_team, LV_SYMBOL_EYE_OPEN);
+    //lv_obj_set_event_cb(btn_team, show_team_status);
 
     
 #ifdef NEW_MQTT_IMPLEMENTATION
@@ -531,11 +528,95 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               0,                                      /* Priority of the task */
                               &_Get_User_Task,                        /* Task handle. */
                               0 );
-
+  
+  //---- Task para GET POST USER
+     xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
+                             "Get User",                              /* Name of the task */
+                              5000,                                   /* Stack size in words */
+                              NULL,                                   /* Task input parameter */
+                              0,                                      /* Priority of the task */
+                              &_Get_TeamMembers_Task,                        /* Task handle. */
+                              0 );
   
    mqqtctrl_register_cb(MQTT_DISCONNECTED_FLAG | MQTT_CONNECTED_FLAG, jitsupport_mqttctrl_event_cb,  "jitsupport Mqtt CB " );
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_loop_cb, "jitsupport app loop" );
    wifictl_register_cb( WIFICTL_CONNECT | WIFICTL_DISCONNECT | WIFICTL_OFF | WIFICTL_ON | WIFICTL_SCAN | WIFICTL_WPS_SUCCESS | WIFICTL_WPS_FAILED | WIFICTL_CONNECT_IP, jit_wifictl_event_cb, "JIT Wifi Event" );
+}
+
+
+
+
+void Get_TeamMembers(void * pvParameters)
+{
+
+  char getpost[100]="http://10.57.16.40/JITAPI/Smartwatch/GetByTeam/11/";
+  //char getpost[100]="http://10.57.16.40/JITAPI/Smartwatch/GetByIP/10.57.38.173";
+
+  while(1)
+  {
+
+      if(wifictl_get_event( WIFICTL_CONNECT ))
+      {
+      
+          http.begin(getpost); //HTTP
+          httpCode = http.GET();
+          log_i("%d",httpCode); 
+
+          if(httpCode > 0) {
+            
+              if(httpCode == HTTP_CODE_OK) {
+
+                String payload = http.getString();
+                log_i("%s",payload);
+
+                DynamicJsonDocument doc3(3072);
+                DeserializationError error = deserializeJson(doc3, payload);
+
+                if (error) {
+                  Serial.print(F("deserializeJson() failed: "));
+                  Serial.println(error.f_str());
+                  return;
+                }
+                
+                uint8_t num=0;
+                StaticJsonDocument<256> userObj;
+
+                for (JsonObject elem : doc3.as<JsonArray>()) {
+
+                  //const char* ip = elem["ip"]; 
+                  const char* area = elem["area"]; 
+                  const char* user = elem["user"]; 
+                  //int teamId = elem["teamId"];
+                  //int id = elem["id"]; 
+                  //int siteId = elem["siteId"]; 
+                  //const char* userCreate = elem["userCreate"]; 
+                  //const char* dateCreate = elem["dateCreate"]; 
+                  //const char* userUpdate = elem["userUpdate"]; 
+                  //const char* dateUpdate = elem["dateUpdate"]; 
+              
+                  deserializeJson(userObj, user);
+                  auto text = userObj[0]["text"].as<const char*>();    
+                  char *Search_UserNameTrim = strtok((char *)text," "); 
+                  strcpy(Team_Members[num].Member_Name,Search_UserNameTrim);
+                  Team_Members[num].state=FULL;
+                  num++;                 
+                  log_i("Membro %d: %s", num, Team_Members[num].Member_Name);
+
+                }
+
+                http.end();
+                vTaskDelete(NULL);    
+               
+              } 
+
+      
+          }
+          http.end();
+       }
+
+  vTaskDelay(5000/ portTICK_PERIOD_MS );
+  }
+
 }
 
 
@@ -653,10 +734,6 @@ bool jitsupport_mqttctrl_event_cb(EventBits_t event, void *arg )
 
 return( true );
 }
-
-
-
-
 
 
 
