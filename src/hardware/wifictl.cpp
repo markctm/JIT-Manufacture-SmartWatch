@@ -56,10 +56,8 @@ void wifictl_StartTask( void );
 void wifictl_Task( void * pvParameters );
 void  wifi_restablish_Task( void * pvParameters);
 
-uint8_t ct_Wifi_retry=0;
-
-int wifi_connected; 
-
+volatile uint8_t ct_Wifi_retry=0;
+volatile int wifi_connected=0; 
 
 
 TaskHandle_t _wifictl_Task;

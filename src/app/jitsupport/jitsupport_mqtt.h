@@ -32,7 +32,7 @@ bool mqqtctrl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const
 void MQTT2_publish(char atualizartopico, char payload);
 void MQTT2_set_subscribe_topics(char *topico_receber, char * topico_atualizar);
 void mqqtctrl_set_event( EventBits_t bits );
-
+void MQTT2_set_client(char *ip_adrress);
 
 
 #endif // _JITSUPPORT_APP_MAIN_H

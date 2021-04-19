@@ -11,8 +11,13 @@
     #define MAX_NUMBER_TICKETS              30
     #define EMPTY                           1
     #define FULL                            0
+    
+
     //#define OLD_APP_JIT   
     #define NO_HTTP_RESPONSE
+    #define NEW_MQTT_IMPLEMENTATION
+
+
 
     #define VIBRATION_DISABLE               0
     #define VIBRATION_SMOOTH                20
@@ -22,9 +27,6 @@
     void jitsupport_app_main_setup( uint32_t tile_num );
     void newticket( JsonObject jsonObj);
     
-    
-    
-
     
     void MQTT_callback(char* topic, byte* message, unsigned int length);
     void MQTT2_publish(char *atualizartopico, char *payload);
