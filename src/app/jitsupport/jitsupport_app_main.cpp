@@ -192,8 +192,10 @@ static lv_obj_t * lbl_statusText;
 static lv_obj_t * btn1;
 static lv_obj_t * btn2;
 static lv_obj_t * btn3;
-static lv_obj_t * lbl_btn_status;
 
+
+static lv_obj_t * lbl_btn_status;
+static lv_obj_t * lbl_btn_team;
 
 
 static lv_obj_t * lbl_actualcard;
@@ -201,7 +203,7 @@ static lv_obj_t * lbl_totalcard;
 static lv_obj_t * lbl_count_separator;
 
 static lv_obj_t * lbl_IP;
-static lv_obj_t * lbl_RSSI;
+static lv_obj_t * lbl_UserName;
 static lv_obj_t * lbl_MQTT;
 
 static lv_obj_t * btn_back;
@@ -209,6 +211,7 @@ static lv_obj_t * btn_next;
 static lv_obj_t * btn_exit;
 static lv_obj_t * btn_config;
 static lv_obj_t *btn_status;
+static lv_obj_t *btn_team;
 
 //----------------------------------------------------------------------------
 static void exit_jitsupport_app_main_event_cb( lv_obj_t * obj, lv_event_t event );
@@ -236,7 +239,8 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
 
   
     //***************************
-     //TOP HORIZONTAL LINE
+    // TOP HORIZONTAL LINE
+
     static lv_point_t line_points[] = { {10, 0}, {230, 0} };
     lv_obj_t *line1;
     line1 = lv_line_create(jitsupport_cont, NULL);
@@ -248,20 +252,20 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_style_set_bg_color(&stl_bg_card, LV_OBJ_PART_MAIN, LV_COLOR_YELLOW);
 
 
-  // BUTTON 1 STYLE
+   // BUTTON 1 STYLE
     lv_style_init(&stl_btn1);
     lv_style_set_bg_color(&stl_btn1, LV_STATE_DEFAULT, LV_COLOR_GREEN);
     lv_style_set_text_color(&stl_btn1, LV_STATE_DEFAULT, LV_COLOR_WHITE);
     lv_style_set_border_color(&stl_btn1, LV_STATE_DEFAULT, LV_COLOR_GREEN);
  
 
-  // BUTTON 2 STYLE
+   // BUTTON 2 STYLE
     lv_style_init(&stl_btn2);
     lv_style_set_bg_color(&stl_btn2, LV_STATE_DEFAULT, lv_color_make(0xf0, 0x1f, 0x1f));
     lv_style_set_text_color(&stl_btn2, LV_STATE_DEFAULT, LV_COLOR_WHITE);
     
 
-// BUTTON 2 STYLE
+   // BUTTON 2 STYLE
     lv_style_init(&stl_btn3);
     lv_style_set_bg_color(&stl_btn3, LV_STATE_DEFAULT, lv_color_make(0xf0, 0x1f, 0x1f));
     lv_style_set_text_color(&stl_btn3, LV_STATE_DEFAULT, LV_COLOR_WHITE);
@@ -291,20 +295,20 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_t * lbl_nocard;
     lbl_nocard = lv_label_create(jitsupport_cont, NULL);
     lv_label_set_text(lbl_nocard, "Sem chamados.");
-    lv_obj_align(lbl_nocard, jitsupport_cont, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(lbl_nocard, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 60);
 
     lbl_IP = lv_label_create(jitsupport_cont, NULL);
     lv_label_set_text(lbl_IP, "0.0.0.0");
-    lv_obj_align(lbl_IP, jitsupport_cont, LV_ALIGN_CENTER, 0, 20);
+    lv_obj_align(lbl_IP, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 80);
 
     
-    lbl_RSSI = lv_label_create(jitsupport_cont, NULL);
-    lv_label_set_text(lbl_RSSI, "-0");
-    lv_obj_align(lbl_RSSI, jitsupport_cont, LV_ALIGN_IN_LEFT_MID, 5, 40);
+    lbl_UserName = lv_label_create(jitsupport_cont, NULL);
+    lv_label_set_text(lbl_UserName, "-0");
+    lv_obj_align(lbl_UserName, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 100);
 
     lbl_MQTT = lv_label_create(jitsupport_cont, NULL);
     lv_label_set_text(lbl_MQTT, "MQTT NOT CONNECTED !");
-    lv_obj_align(lbl_MQTT, jitsupport_cont, LV_ALIGN_IN_LEFT_MID, 5, 60);
+    lv_obj_align(lbl_MQTT, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 120);
  
     bg_card = lv_obj_create(jitsupport_cont, NULL);
     lv_obj_set_pos(bg_card, 0, 37);
@@ -319,19 +323,18 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_align(lbl_workstation, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
 
 
-    // CALL TIME LABEL
+  // CALL TIME LABEL
     
     lbl_calltime = lv_label_create(bg_card, NULL);
     lv_label_set_text(lbl_calltime, "12: 00");
     lv_obj_align(lbl_calltime, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 33);
-
 
     // RISK LABEL
     
     lbl_risk = lv_label_create(bg_card, NULL);
     lv_label_set_recolor(lbl_risk, true);
     lv_label_set_text(lbl_risk, "RISCO");
-    lv_obj_align(lbl_risk, lbl_workstation, LV_ALIGN_OUT_RIGHT_MID, -20, 0);
+    lv_obj_align(lbl_risk, lbl_calltime, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
     // DESCRIPTION LABEL
     
@@ -360,6 +363,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
 
 
     // BUTTON 1
+
     btn1 = lv_btn_create(bg_card, NULL);
     lv_obj_set_pos(btn1, 10, 130);
     lv_obj_set_width(btn1,75);
@@ -368,6 +372,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
    
     
     // BUTTON 1 LABEL
+
     lv_obj_t * lbl_btn1;
     lbl_btn1 = lv_label_create(btn1, NULL);
     lv_label_set_text(lbl_btn1, "Confirmar");
@@ -376,6 +381,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
 
 
     // BUTTON 2
+
     btn2 = lv_btn_create(bg_card, NULL);
     lv_obj_set_pos(btn2, 155, 130);
     lv_obj_set_width(btn2,75);
@@ -449,7 +455,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
 
     
     btn_exit= lv_btn_create(jitsupport_cont, NULL);
-    lv_obj_set_width(btn_exit,80);
+    lv_obj_set_width(btn_exit,60);
     lv_obj_set_height(btn_exit,35);
     lv_obj_align(btn_exit, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 0, 0);
     lv_obj_add_style(btn_exit, LV_OBJ_PART_MAIN, &stl_transp);
@@ -459,7 +465,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_set_event_cb(btn_exit, exit_jitsupport_app_main_event_cb);
 
     btn_config= lv_btn_create(jitsupport_cont, NULL);
-    lv_obj_set_width(btn_config,80);
+    lv_obj_set_width(btn_config,60);
     lv_obj_set_height(btn_config,35);
     lv_obj_align(btn_config, jitsupport_cont, LV_ALIGN_IN_TOP_RIGHT, 0, 0);
     lv_obj_add_style(btn_config, LV_OBJ_PART_MAIN, &stl_transp);
@@ -468,23 +474,30 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_label_set_text(lbl_btn_config, LV_SYMBOL_SETTINGS);
 
     btn_status= lv_btn_create(jitsupport_cont, NULL);
-    lv_obj_set_width(btn_status,80);
+    lv_obj_set_width(btn_status,60);
     lv_obj_set_height(btn_status,35);
-    lv_obj_align(btn_status, jitsupport_cont, LV_ALIGN_IN_TOP_MID, 0, 0);
-    lv_obj_add_style(btn_status, LV_OBJ_PART_MAIN, &stl_transp);
-    //lv_style_set_text_color(&stl_transp, LV_OBJ_PART_MAIN, LV_COLOR_GREEN);
-    
+    lv_obj_align(btn_status, jitsupport_cont, LV_ALIGN_IN_TOP_MID, -30, 0);
+    lv_obj_add_style(btn_status, LV_OBJ_PART_MAIN, &stl_transp);    
     lbl_btn_status = lv_label_create(btn_status, NULL);
     lv_label_set_text(lbl_btn_status, LV_SYMBOL_OK);
+    lv_obj_set_event_cb(btn_status, show_watch_status);
 
 
-     lv_obj_set_event_cb(btn_status, show_watch_status);
+    btn_team= lv_btn_create(jitsupport_cont, NULL);
+    lv_obj_set_width(btn_team,60);
+    lv_obj_set_height(btn_team,35);
+    lv_obj_align(btn_team, jitsupport_cont, LV_ALIGN_IN_TOP_MID, 30, 0);
+    lv_obj_add_style(btn_team, LV_OBJ_PART_MAIN, &stl_transp);
+    lbl_btn_team = lv_label_create(btn_team, NULL);
+    lv_label_set_text(lbl_btn_team, LV_SYMBOL_EYE_OPEN);
+
     
 #ifdef NEW_MQTT_IMPLEMENTATION
      
      mqttctrl_setup();
 
 #else
+
     client.setServer(mqtt_server, MQTT_PORT);
     client.setKeepAlive(MQTT_KEEPALIVE_SECONDS);
     client.setCallback(MQTT_callback);
@@ -549,9 +562,8 @@ void Get_User(void * pvParameters)
 #else
                 log_i("User Found... Connecting MQTT... Deleting Task...");
                  vTaskResume(_mqttCheck_Task);
-                vTaskDelete(NULL);  
 #endif
-
+                vTaskDelete(NULL);  
             }            
           }
           else log_i("Não ta rolando WIFI");     
@@ -697,7 +709,7 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
             log_i("\n Ticket ID: %s \n Workstation ID: %s \n Risk ID: %s \n Calltime ID: %s \n Description: %s\n",myticket.ticket_id,myticket.workstation,myticket.risk,myticket.call_time,myticket.description);         
             log_i("sizeof (ticket) = %d\n", sizeof (myticket));
 
-            if(!(strcmp(myticket.risk,"1")))strcpy(myticket.risk," - Rodando");  
+            if(!(strcmp(myticket.risk,"1")))strcpy(myticket.risk,"- Rodando");  
             if(!(strcmp(myticket.risk,"0")))strcpy(myticket.risk,"#ff0000 - Downtime#"); 
           
             log_i("%s", myticket.risk);
@@ -1102,7 +1114,7 @@ void getWatchUser(){
                 strcpy(nomefull,text);
                 log_i("%d",id);
                 log_i("%s",text);
-                lv_label_set_text(lbl_RSSI,text);
+                lv_label_set_text(lbl_UserName,text);
                 pegueiUser = true;              
                 
               } else {

@@ -14,7 +14,7 @@
     
 
     //#define OLD_APP_JIT   
-    #define NO_HTTP_RESPONSE
+    //#define NO_HTTP_RESPONSE
     #define NEW_MQTT_IMPLEMENTATION
 
 
