@@ -1,4 +1,4 @@
-# 1 "C:\\Users\\100064~2\\AppData\\Local\\Temp\\tmpqsm4k_g7"
+# 1 "C:\\Users\\100064~2\\AppData\\Local\\Temp\\tmpy6zk8sfm"
 #include <Arduino.h>
 # 1 "C:/Users/100064613/Documents/F_O_F/JIT-Manufacture-SmartWatch/src/my-ttgo-watch.ino"
 # 24 "C:/Users/100064613/Documents/F_O_F/JIT-Manufacture-SmartWatch/src/my-ttgo-watch.ino"
@@ -45,8 +45,11 @@ void setup()
     motor_setup();
 
 
+
+
     heap_caps_malloc_extmem_enable( 1 );
     display_setup();
+
     screenshot_setup();
 
     splash_screen_stage_one();
@@ -64,7 +67,6 @@ void setup()
             delay(3000);
             ESP.restart();
         }
-
     }
 
     splash_screen_stage_update( "init powermgm", 60 );
@@ -74,7 +76,13 @@ void setup()
     splash_screen_stage_finish();
 
     gui_setup();
-# 102 "C:/Users/100064613/Documents/F_O_F/JIT-Manufacture-SmartWatch/src/my-ttgo-watch.ino"
+
+
+
+
+
+
+
     jitsupport_app_setup();
 
     if ( wifictl_get_autoon() && ( pmu_is_charging() || pmu_is_vbus_plug() || ( pmu_get_battery_voltage() > 3400) ) )
@@ -83,7 +91,8 @@ void setup()
 
 
     heap_caps_malloc_extmem_enable( 16*1024 );
-
+    blectl_setup();
+    blectl_off();
     sound_setup();
 
     display_set_brightness( display_get_brightness() );

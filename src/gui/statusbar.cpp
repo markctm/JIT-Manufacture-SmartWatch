@@ -33,7 +33,6 @@
 #include "SD.h"
 
 #include "statusbar.h"
-
 #include "hardware/powermgm.h"
 #include "hardware/wifictl.h"
 #include "hardware/blectl.h"
@@ -46,11 +45,7 @@
 #include "gui/mainbar/mainbar.h"
 #include "gui/mainbar/setup_tile/wlan_settings/wlan_settings.h"
 #include "gui/mainbar/setup_tile/bluetooth_settings/bluetooth_settings.h"
-
-
-#include "app/jitsupport/jitsupport_app_main.h"
-
-
+#include "app/jitsupport/jitsupport_mqtt.h"
 
 
 static lv_obj_t *statusbar = NULL;
@@ -64,6 +59,7 @@ static lv_obj_t *statusbar_brightness_slider = NULL;
 static lv_obj_t *statusbar_sound_icon = NULL;
 static lv_style_t statusbarstyle[ STATUSBAR_STYLE_NUM ];
 
+
 LV_IMG_DECLARE(wifi_64px);
 LV_IMG_DECLARE(bluetooth_64px);
 LV_IMG_DECLARE(foot_16px);
@@ -71,6 +67,8 @@ LV_IMG_DECLARE(alarm_16px);
 LV_IMG_DECLARE(brightness_32px);
 LV_IMG_DECLARE(sound_32px);
 LV_IMG_DECLARE(sound_mute_32px);
+//LV_IMG_DECLARE(info_ok_16px);
+
 
 lv_status_bar_t statusicon[ STATUSBAR_NUM ] = 
 {
@@ -81,7 +79,8 @@ lv_status_bar_t statusicon[ STATUSBAR_NUM ] =
     { NULL, LV_SYMBOL_VOLUME_MAX, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_BELL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_WARNING, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
-    { NULL, &alarm_16px, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
+    { NULL,  &alarm_16px, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
+    { NULL,  LV_SYMBOL_CLOSE, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_RED ]},// MQTT SYMBOL
 };
 
 bool should_save_brightness_config = false;
@@ -103,8 +102,6 @@ bool statusbar_pmuctl_event_cb( EventBits_t event, void *arg );
 bool statusbar_displayctl_event_cb( EventBits_t event, void *arg );
 
 bool statusbar_mqtt_event_cb( EventBits_t event, void *arg );
-
-
 
 void statusbar_wifi_set_state( bool state, const char *wifiname );
 void statusbar_wifi_set_ip_state( bool state, const char *ip );
@@ -234,6 +231,7 @@ void statusbar_setup( void )
     lv_obj_add_style( statusbar_stepicon, LV_OBJ_PART_MAIN, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] );
     lv_obj_align( statusbar_stepicon, statusbar, LV_ALIGN_IN_TOP_LEFT, 5, 4 );
 
+
     statusbar_stepcounterlabel = lv_label_create(statusbar, NULL );
     lv_obj_reset_style_list( statusbar_stepcounterlabel, LV_OBJ_PART_MAIN );
     lv_obj_add_style( statusbar_stepcounterlabel, LV_OBJ_PART_MAIN, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] );
@@ -292,7 +290,7 @@ void statusbar_setup( void )
     sound_register_cb( SOUNDCTL_ENABLED | SOUNDCTL_VOLUME, statusbar_soundctl_event_cb, "statusbar sound");
     display_register_cb( DISPLAYCTL_BRIGHTNESS, statusbar_displayctl_event_cb, "statusbar display" );
 
-    mqtt_register_cb( MQTT_CONNECTED_FLAG | MQTT_DISCONNECTED_FLAG, statusbar_mqtt_event_cb, "statusbar mqtt" );
+    mqqtctrl_register_cb( MQTT_CONNECTED_FLAG | MQTT_DISCONNECTED_FLAG, statusbar_mqtt_event_cb, "statusbar mqtt" );
 
 
     lv_slider_set_value( statusbar_brightness_slider, display_get_brightness(), LV_ANIM_OFF );
@@ -472,18 +470,22 @@ bool statusbar_wifictl_event_cb( EventBits_t event, void *arg ) {
 
 bool statusbar_mqtt_event_cb( EventBits_t event, void *arg ) {
 
-switch( event ) {
-        case MQTT_CONNECTED_FLAG:       
-   
-                            log_i("oi mqtt deu bom");
-                                    break;
-        case MQTT_DISCONNECTED_FLAG:    
-      
-                            log_i("oi mqtt deu ruim");
-                                    break;
-}
+    switch( event ) {
+            case MQTT_CONNECTED_FLAG:               
+                                    
+                                    lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_OK );
+                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_GREEN );
+                                    statusbar_show_icon( STATUSBAR_MQTT);
+    
+                                        break;
+            case MQTT_DISCONNECTED_FLAG: 
+                                           
+                                    lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_CLOSE );
+                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_RED ); 
+                                    statusbar_show_icon(STATUSBAR_MQTT);
 
-
+                                        break;
+    }
 
     statusbar_refresh();
     return( true );

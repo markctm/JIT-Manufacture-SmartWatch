@@ -32,7 +32,7 @@
     #define DISPLAY_MIN_TIMEOUT         15              /** @brief min display timeout */
     #define DISPLAY_MAX_TIMEOUT         300             /** @brief max display timeout */
     #define DISPLAY_MIN_BRIGHTNESS      8               /** @brief min display brightness */
-    #define DISPLAY_MAX_BRIGHTNESS      255             /** @brief max display brightness */
+    #define DISPLAY_MAX_BRIGHTNESS      160             /** @brief max display brightness */
     #define DISPLAY_MIN_ROTATE          0               /** @brief min display rotation */
     #define DISPLAY_MAX_ROTATE          270             /** @brief max display rotation */
 
