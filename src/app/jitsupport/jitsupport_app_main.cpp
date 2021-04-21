@@ -94,10 +94,11 @@ uint8_t atualiza_ticket(Ticket_t *atualiza);
 void sendCanceled(lv_obj_t *obj, lv_event_t event);
 void show_watch_status(lv_obj_t *obj, lv_event_t event);
 void Get_TeamMembers(void * pvParameters);
-
+void show_team_status(lv_obj_t *obj, lv_event_t event);
 //------Prototipos--WIFI------
 
 bool jit_wifictl_event_cb( EventBits_t event, void *arg );
+
 
 
 //------Prototipos--MQTT----
@@ -178,6 +179,9 @@ static lv_style_t stl_transp;
 static lv_style_t stl_btnStatus;
 
 static lv_obj_t * bg_card;
+static lv_obj_t * team_card;
+static lv_obj_t * status_card;
+static lv_obj_t * lbl_teamMembers;
 static lv_obj_t * lbl_workstation;
 static lv_obj_t * lbl_risk;
 static lv_obj_t * lbl_calltime;
@@ -234,7 +238,8 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_add_style( jitsupport_cont, LV_OBJ_PART_MAIN, &stl_view );
     lv_obj_align( jitsupport_cont, jitsupport_app_main_tile, LV_ALIGN_CENTER, 0, 0 );
 
-  
+
+
     //***************************
     // TOP HORIZONTAL LINE
 
@@ -288,31 +293,53 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_style_set_border_width(&stl_transp,LV_BTN_STATE_RELEASED,0);
     lv_style_set_border_width(&stl_transp,_LV_BTN_STATE_LAST,0);
     
-    // LABEL NO CARD
-    lv_obj_t * lbl_nocard;
-    lbl_nocard = lv_label_create(jitsupport_cont, NULL);
-    lv_label_set_text(lbl_nocard, "");
-    lv_obj_align(lbl_nocard, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 60);
 
-    lbl_IP = lv_label_create(jitsupport_cont, NULL);
+  //-----Status Card------ 
+    status_card = lv_obj_create(jitsupport_cont, NULL);
+    lv_obj_set_pos(status_card, 0, 37);
+    lv_obj_set_width(status_card,240);
+    lv_obj_set_height(status_card,167);
+    lv_obj_add_style(status_card, LV_OBJ_PART_MAIN, &stl_view);
+
+    // LABEL NO CARD
+ 
+    lbl_IP = lv_label_create(status_card, NULL);
     lv_label_set_text(lbl_IP, "0.0.0.0");
-    lv_obj_align(lbl_IP, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 80);
+    lv_obj_align(lbl_IP, status_card, LV_ALIGN_IN_TOP_LEFT, 5, 80);
 
     
-    lbl_UserName = lv_label_create(jitsupport_cont, NULL);
-    lv_label_set_text(lbl_UserName, "-0");
-    lv_obj_align(lbl_UserName, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 100);
+    lbl_UserName = lv_label_create(status_card, NULL);
+    lv_label_set_text(lbl_UserName, "No Name Found");
+    lv_obj_align(lbl_UserName, status_card, LV_ALIGN_IN_TOP_LEFT, 5, 100);
 
-    lbl_MQTT = lv_label_create(jitsupport_cont, NULL);
+    lbl_MQTT = lv_label_create(status_card, NULL);
     lv_label_set_text(lbl_MQTT, "MQTT NOT CONNECTED !");
-    lv_obj_align(lbl_MQTT, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 120);
+    lv_obj_align(lbl_MQTT, status_card, LV_ALIGN_IN_TOP_LEFT, 5, 120);
  
+
+
+  //-----Team Ground Card------ 
+    team_card = lv_obj_create(jitsupport_cont, NULL);
+    lv_obj_set_pos(team_card, 0, 37);
+    lv_obj_set_width(team_card,240);
+    lv_obj_set_height(team_card,167);
+    lv_obj_add_style(team_card, LV_OBJ_PART_MAIN, &stl_view);
+
+
+  // -------Team Label---------
+
+    lbl_teamMembers = lv_label_create(team_card, NULL);
+    lv_label_set_text(lbl_teamMembers, "");
+    lv_obj_align(lbl_teamMembers, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
+
+
+    //-----Back Ground Card------ 
     bg_card = lv_obj_create(jitsupport_cont, NULL);
     lv_obj_set_pos(bg_card, 0, 37);
     lv_obj_set_width(bg_card,240);
     lv_obj_set_height(bg_card,167);
     lv_obj_add_style(bg_card, LV_OBJ_PART_MAIN, &stl_bg_card);
-    
+
     // WORKSTATION LABEL
      
     lbl_workstation = lv_label_create(bg_card, NULL);
@@ -486,8 +513,12 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_add_style(btn_team, LV_OBJ_PART_MAIN, &stl_transp);
     lbl_btn_team = lv_label_create(btn_team, NULL);
     lv_label_set_text(lbl_btn_team, LV_SYMBOL_EYE_OPEN);
-    //lv_obj_set_event_cb(btn_team, show_team_status);
+    lv_obj_set_event_cb(btn_team, show_team_status);
 
+
+    // INIT CARD
+
+    lv_obj_set_hidden(status_card,false);
     
 #ifdef NEW_MQTT_IMPLEMENTATION
      
@@ -529,21 +560,11 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               &_Get_User_Task,                          /* Task handle. */
                               0 );
   
-  //---- Task para GET POST USER
-   //  xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
-    //                         "Get User",                              /* Name of the task */
-    //                         5000,                                   /* Stack size in words */
-     //                         NULL,                                   /* Task input parameter */
-     //                         1,                                      /* Priority of the task */
-     //                         &_Get_TeamMembers_Task,                 /* Task handle. */
-     //                         0 );
-   //vTaskSuspend(_Get_TeamMembers_Task);
 
    mqqtctrl_register_cb(MQTT_DISCONNECTED_FLAG | MQTT_CONNECTED_FLAG, jitsupport_mqttctrl_event_cb,  "jitsupport Mqtt CB " );
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_loop_cb, "jitsupport app loop" );
    wifictl_register_cb( WIFICTL_CONNECT | WIFICTL_DISCONNECT | WIFICTL_OFF | WIFICTL_ON | WIFICTL_SCAN | WIFICTL_WPS_SUCCESS | WIFICTL_WPS_FAILED | WIFICTL_CONNECT_IP, jit_wifictl_event_cb, "JIT Wifi Event" );
 }
-
 
 
 
@@ -589,8 +610,9 @@ void Get_TeamMembers(void * pvParameters)
                       deserializeJson(userObj, user);
                       auto text = userObj[0]["text"].as<const char*>();    
                       log_i("oiiii %s",text);
-                      ////char *UserTrim = strtok((char *)text," "); 
-                      strcpy(Team_Members[num].Member_Name,text);
+                      char *UserTrim = strtok((char *)text," ");
+                      strtok(NULL, " "); 
+                      strcpy(Team_Members[num].Member_Name,UserTrim);
                       Team_Members[num].state=FULL;
                                       
                       log_i("Membro %d: %s", num, Team_Members[num].Member_Name);
@@ -604,7 +626,18 @@ void Get_TeamMembers(void * pvParameters)
 
                      }
                      else{
-                       log_i("Task Team Member Deleted !");
+                       
+                          //todo melhorar implementação 
+
+                         lv_obj_t * lbl_status[num-1];
+                         for( int a=0 ; a < num;  a++)
+                         {
+                              lbl_status[a] = lv_label_create(team_card, NULL);
+                              lv_label_set_text(lbl_status[a], Team_Members[a].Member_Name);
+                              lv_obj_align(lbl_status[a], NULL, LV_ALIGN_IN_TOP_LEFT, 10, 20*a);
+                         }
+                         
+                         log_i("Task Team Member Deleted !");
                          vTaskDelete(NULL);   
                      }
 
@@ -1417,21 +1450,57 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
 
 void show_watch_status(lv_obj_t *obj, lv_event_t event){
 
-  static bool aux=false; 
 
 if (event == LV_EVENT_CLICKED) {
 
-        if(get_number_tickets()>0)
-        {
-          lv_obj_set_hidden(bg_card,!lv_obj_get_hidden(bg_card)); 
+        
+          if(lv_obj_get_hidden(status_card)==true)
+          {
+              lv_obj_set_hidden(status_card,false);
+              lv_obj_set_hidden(bg_card,true);
+              lv_obj_set_hidden(team_card,true); 
 
-        }  
 
+          }
+          else
+          {
+              
+              lv_obj_set_hidden(status_card,true);
+              lv_obj_set_hidden(team_card,true); 
+              if(get_number_tickets()>0)lv_obj_set_hidden(bg_card,false);
+
+
+          }
+}
+}
+
+
+void show_team_status(lv_obj_t *obj, lv_event_t event){
+
+if (event == LV_EVENT_CLICKED) {
+
+          
+          if(lv_obj_get_hidden(team_card)==true)
+          {
+              //Ta escondido Team viewer           
+              lv_obj_set_hidden(team_card,false);
+              lv_obj_set_hidden(bg_card,true);
+              lv_obj_set_hidden(status_card,true); 
+
+          }
+          else
+          {
+              
+              lv_obj_set_hidden(team_card,true);
+              lv_obj_set_hidden(status_card,true);
+              if(get_number_tickets()>0)lv_obj_set_hidden(bg_card,false);  
+
+          }
+   
+      
 }
 
 }
-
-
 
 
 
