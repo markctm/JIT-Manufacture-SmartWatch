@@ -65,7 +65,7 @@ Ticket_t  myticket;
 
 //----A fazer ainda ------
 typedef struct{
-  char  Member_Name[30];
+  char  Member_Name[30]="";
   bool  online=false;
   uint8_t  state=EMPTY;
 } Team_t;
@@ -139,7 +139,7 @@ bool mqtt_send_event_cb( EventBits_t event, void *arg);
 
 //----------------API----------------------
 
-char* GetWatchById_host = "http://10.57.16.40/JITAPI/Smartwatch/GetByIP/";
+char* GetWatchById_host = "http://172.24.72.137/JITAPI/Smartwatch/GetByIP/";
 char GetWatchById_Url[50] = {0};
 char ip_address[15];
 
@@ -291,7 +291,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     // LABEL NO CARD
     lv_obj_t * lbl_nocard;
     lbl_nocard = lv_label_create(jitsupport_cont, NULL);
-    lv_label_set_text(lbl_nocard, "Sem chamados.");
+    lv_label_set_text(lbl_nocard, "");
     lv_obj_align(lbl_nocard, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 60);
 
     lbl_IP = lv_label_create(jitsupport_cont, NULL);
@@ -475,7 +475,7 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_align(btn_status, jitsupport_cont, LV_ALIGN_IN_TOP_MID, -30, 0);
     lv_obj_add_style(btn_status, LV_OBJ_PART_MAIN, &stl_transp);    
     lbl_btn_status = lv_label_create(btn_status, NULL);
-    lv_label_set_text(lbl_btn_status, LV_SYMBOL_OK);
+    lv_label_set_text(lbl_btn_status, LV_SYMBOL_CLOSE);
     lv_obj_set_event_cb(btn_status, show_watch_status);
 
 
@@ -521,23 +521,24 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               0 );
 #endif
   //---- Task para GET POST USER
-     xTaskCreatePinnedToCore( Get_User,                               /* Function to implement the task */
-                             "Get User",                              /* Name of the task */
-                              3000,                                   /* Stack size in words */
-                              NULL,                                   /* Task input parameter */
-                              0,                                      /* Priority of the task */
-                              &_Get_User_Task,                        /* Task handle. */
+     xTaskCreatePinnedToCore( Get_User,                                 /* Function to implement the task */
+                             "Get User",                                /* Name of the task */
+                              3000,                                     /* Stack size in words */
+                              NULL,                                     /* Task input parameter */
+                              0,                                        /* Priority of the task */
+                              &_Get_User_Task,                          /* Task handle. */
                               0 );
   
   //---- Task para GET POST USER
-     xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
-                             "Get User",                              /* Name of the task */
-                              5000,                                   /* Stack size in words */
-                              NULL,                                   /* Task input parameter */
-                              0,                                      /* Priority of the task */
-                              &_Get_TeamMembers_Task,                        /* Task handle. */
-                              0 );
-  
+   //  xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
+    //                         "Get User",                              /* Name of the task */
+    //                         5000,                                   /* Stack size in words */
+     //                         NULL,                                   /* Task input parameter */
+     //                         1,                                      /* Priority of the task */
+     //                         &_Get_TeamMembers_Task,                 /* Task handle. */
+     //                         0 );
+   //vTaskSuspend(_Get_TeamMembers_Task);
+
    mqqtctrl_register_cb(MQTT_DISCONNECTED_FLAG | MQTT_CONNECTED_FLAG, jitsupport_mqttctrl_event_cb,  "jitsupport Mqtt CB " );
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_loop_cb, "jitsupport app loop" );
    wifictl_register_cb( WIFICTL_CONNECT | WIFICTL_DISCONNECT | WIFICTL_OFF | WIFICTL_ON | WIFICTL_SCAN | WIFICTL_WPS_SUCCESS | WIFICTL_WPS_FAILED | WIFICTL_CONNECT_IP, jit_wifictl_event_cb, "JIT Wifi Event" );
@@ -549,12 +550,14 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
 void Get_TeamMembers(void * pvParameters)
 {
 
-  char getpost[100]="http://10.57.16.40/JITAPI/Smartwatch/GetByTeam/11/";
-  //char getpost[100]="http://10.57.16.40/JITAPI/Smartwatch/GetByIP/10.57.38.173";
-
+  char getpost[100]="http://172.24.72.137/JITAPI/Smartwatch/GetByTeam/";
+  char aux[4]="";
+  sprintf(aux, "%d",idTeam);
+  strcat(getpost, aux);
+ 
   while(1)
   {
-
+   
       if(wifictl_get_event( WIFICTL_CONNECT ))
       {
       
@@ -567,58 +570,55 @@ void Get_TeamMembers(void * pvParameters)
               if(httpCode == HTTP_CODE_OK) {
 
                 String payload = http.getString();
+                http.end();
                 log_i("%s",payload);
 
                 DynamicJsonDocument doc3(3072);
                 DeserializationError error = deserializeJson(doc3, payload);
 
                 if (error) {
-                  Serial.print(F("deserializeJson() failed: "));
-                  Serial.println(error.f_str());
-                  return;
+                  log_i("deserializeJson() failed: ");
                 }
-                
-                uint8_t num=0;
-                StaticJsonDocument<256> userObj;
+                else{
+                    uint8_t num=0;
+                    StaticJsonDocument<256> userObj;
 
-                for (JsonObject elem : doc3.as<JsonArray>()) {
+                    for (JsonObject elem : doc3.as<JsonArray>()) {
 
-                  //const char* ip = elem["ip"]; 
-                  const char* area = elem["area"]; 
-                  const char* user = elem["user"]; 
-                  //int teamId = elem["teamId"];
-                  //int id = elem["id"]; 
-                  //int siteId = elem["siteId"]; 
-                  //const char* userCreate = elem["userCreate"]; 
-                  //const char* dateCreate = elem["dateCreate"]; 
-                  //const char* userUpdate = elem["userUpdate"]; 
-                  //const char* dateUpdate = elem["dateUpdate"]; 
-              
-                  deserializeJson(userObj, user);
-                  auto text = userObj[0]["text"].as<const char*>();    
-                  char *Search_UserNameTrim = strtok((char *)text," "); 
-                  strcpy(Team_Members[num].Member_Name,Search_UserNameTrim);
-                  Team_Members[num].state=FULL;
-                  num++;                 
-                  log_i("Membro %d: %s", num, Team_Members[num].Member_Name);
+                      const char* user = elem["user"];                
+                      deserializeJson(userObj, user);
+                      auto text = userObj[0]["text"].as<const char*>();    
+                      log_i("oiiii %s",text);
+                      ////char *UserTrim = strtok((char *)text," "); 
+                      strcpy(Team_Members[num].Member_Name,text);
+                      Team_Members[num].state=FULL;
+                                      
+                      log_i("Membro %d: %s", num, Team_Members[num].Member_Name);
+                      num++; 
+                    }
+
+                     if(strcmp(Team_Members[0].Member_Name," ")==0)
+                     {
+                       // Rolou algum problema Pelo Menos uma pessoa é obrigatório ter no time 
+                       log_i("Task Team Member EMPTY !");
+
+                     }
+                     else{
+                       log_i("Task Team Member Deleted !");
+                         vTaskDelete(NULL);   
+                     }
 
                 }
 
-                http.end();
-                vTaskDelete(NULL);    
-               
-              } 
-
-      
+             } 
+     
           }
-          http.end();
        }
 
-  vTaskDelay(5000/ portTICK_PERIOD_MS );
+    vTaskDelay(2000/ portTICK_PERIOD_MS );
   }
 
 }
-
 
 
 void Get_User(void * pvParameters)
@@ -633,13 +633,24 @@ void Get_User(void * pvParameters)
             else
             {             
 
-
 #ifdef NEW_MQTT_IMPLEMENTATION
                 MQTT2_set_client(ip_address);
                 MQTT2_set_subscribe_topics(nometopico,atualizartopico);
                 log_i("setando evento de conexão mqtt");
+                vTaskDelay(1000/ portTICK_PERIOD_MS );
                 mqqtctrl_set_event(MQTT_START_CONNECTION);
-               
+                //xTaskNotifyGive(_Get_TeamMembers_Task);
+                //vTaskResume(_Get_TeamMembers_Task);
+
+                  xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
+                                              "Get User",                              /* Name of the task */
+                                              5000,                                   /* Stack size in words */
+                                                NULL,                                   /* Task input parameter */
+                                                0,                                      /* Priority of the task */
+                                                &_Get_TeamMembers_Task,                 /* Task handle. */
+                                                0 );
+
+          
 #else
                 log_i("User Found... Connecting MQTT... Deleting Task...");
                  vTaskResume(_mqttCheck_Task);

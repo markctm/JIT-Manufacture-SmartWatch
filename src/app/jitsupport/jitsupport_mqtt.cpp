@@ -212,11 +212,11 @@ void Mqtt_status_task(void * pvParameters ){
                 once_flag=0;
 
             }
-
-            mqqtctrl_set_event(MQTT_CONNECTED_FLAG);
-            mqqtctrl_send_event_cb(MQTT_CONNECTED_FLAG);    
-          
+         
           }
+
+          mqqtctrl_set_event(MQTT_CONNECTED_FLAG);
+          mqqtctrl_send_event_cb(MQTT_CONNECTED_FLAG);   
                
         break;
 

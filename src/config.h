@@ -85,7 +85,7 @@ extern volatile int wifi_connected;
 #define MQTT_PSSWD                                  NULL
 #define MQTT_PORT                                   1883
 #define MQTT_KEEPALIVE_SECONDS                      120
-#define MQTT_CLEAN_SESSION                          1    
+#define MQTT_CLEAN_SESSION                          0    
 #endif
 
 
