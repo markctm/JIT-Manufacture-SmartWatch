@@ -46,8 +46,13 @@ bool http_ota_start( const char* url, const char* md5 ) {
     HTTPClient http;
 
     http.setUserAgent( "ESP32-UPDATE-" __FIRMWARE__ );
-    http.begin( url );
+    bool result = http.begin( url );
+
+    log_i("REsultado http OTA/ URL %d", result); 
+
     int httpCode = http.GET();
+
+    log_i("HTTP OTA ROLANDO");
 
     if ( httpCode > 0 && httpCode == HTTP_CODE_OK ) {
         http_ota_send_event_cb( HTTP_OTA_START, (void *)NULL );

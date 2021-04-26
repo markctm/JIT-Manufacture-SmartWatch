@@ -267,9 +267,13 @@ void update_check_version( void ) {
 }
 
 void update_Task( void * pvParameters ) {
-    log_i("start update task, heap: %d", ESP.getFreeHeap() );
-
+    log_i("Start update task, heap: %d", ESP.getFreeHeap() );
+    log_i("Disparou task ");
+    
+    
     if ( xEventGroupGetBits( update_event_handle) & UPDATE_GET_VERSION_REQUEST ) {
+
+        log_i("Entrou auqi if 1");
         int64_t firmware_version = update_check_new_version( update_setup_get_url() );
         if ( firmware_version > atol( __FIRMWARE__ ) && firmware_version > 0 ) {
             char version_msg[48] = "";
@@ -291,8 +295,13 @@ void update_Task( void * pvParameters ) {
         lv_obj_invalidate( lv_scr_act() );
     }
     if ( ( xEventGroupGetBits( update_event_handle) & UPDATE_REQUEST ) && ( update_get_url() != NULL ) ) {
+        
+         log_i("Entrou auqi if 2");
+         log_i("%s", update_get_url());
+
         if( WiFi.status() == WL_CONNECTED ) {
 
+            log_i("Entrou auqi if 3");
             Serial.print("No Wifi !! \n");
 
             uint32_t display_timeout = display_get_timeout();

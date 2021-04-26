@@ -42,7 +42,7 @@
     /*
     * Firmware version string
     */
-    #define __FIRMWARE__            "TT_WATCH_JABIL"
+    #define __FIRMWARE__            "2021042300"
 
 
 

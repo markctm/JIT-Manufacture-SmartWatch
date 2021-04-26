@@ -518,7 +518,9 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
 
     // INIT CARD
 
-    lv_obj_set_hidden(status_card,false);
+    lv_obj_set_hidden(status_card,true);
+    lv_obj_set_hidden(team_card,true);
+
     
 #ifdef NEW_MQTT_IMPLEMENTATION
      
@@ -629,12 +631,19 @@ void Get_TeamMembers(void * pvParameters)
                        
                           //todo melhorar implementação 
 
-                         lv_obj_t * lbl_status[num-1];
+                        lv_obj_t * lbl_Teamstatus[num-1];
+                        lv_obj_t * lbl_team;
+
+                        lbl_team = lv_label_create(team_card, NULL);
+                        lv_label_set_text(lbl_team, "TEAM MEMBERS: ");
+                        lv_obj_align(lbl_team, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 5);
+
+
                          for( int a=0 ; a < num;  a++)
                          {
-                              lbl_status[a] = lv_label_create(team_card, NULL);
-                              lv_label_set_text(lbl_status[a], Team_Members[a].Member_Name);
-                              lv_obj_align(lbl_status[a], NULL, LV_ALIGN_IN_TOP_LEFT, 10, 20*a);
+                              lbl_Teamstatus[a] = lv_label_create(team_card, NULL);
+                              lv_label_set_text(lbl_Teamstatus[a], Team_Members[a].Member_Name);
+                              lv_obj_align(lbl_Teamstatus[a], NULL, LV_ALIGN_IN_TOP_LEFT, 10, 30 + 13*a);
                          }
                          
                          log_i("Task Team Member Deleted !");
@@ -672,10 +681,8 @@ void Get_User(void * pvParameters)
                 log_i("setando evento de conexão mqtt");
                 vTaskDelay(1000/ portTICK_PERIOD_MS );
                 mqqtctrl_set_event(MQTT_START_CONNECTION);
-                //xTaskNotifyGive(_Get_TeamMembers_Task);
-                //vTaskResume(_Get_TeamMembers_Task);
 
-                  xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
+                xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
                                               "Get User",                              /* Name of the task */
                                               5000,                                   /* Stack size in words */
                                                 NULL,                                   /* Task input parameter */
