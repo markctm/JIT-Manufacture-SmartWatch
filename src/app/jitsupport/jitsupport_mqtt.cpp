@@ -30,7 +30,9 @@
 #include <HTTPClient.h>
 #include <PubSubClient.h>
 
-#include "hardware/wifictl.h"    
+#include "hardware/wifictl.h"
+#include "hardware/callback.h"
+
 #include "jitsupport_app_main.h"
 
 //***************  MQTT ******************//
@@ -279,7 +281,6 @@ void MQTT2_set_subscribe_topics(char *topico_receber, char * topico_atualizar)
   
 
 }
-
 
 
 void Mqtt_Ctrl_task(void * pvParameters)

@@ -38,9 +38,15 @@
 #include "hardware/wifictl.h"
 #include "hardware/motor.h"
 #include "hardware/http_ota.h"
+#include "hardware/callback.h"
+
+
 
 EventGroupHandle_t update_event_handle = NULL;
 TaskHandle_t _update_Task;
+callback_t *otactrl_callback = NULL;
+
+
 lv_task_t *_update_progress_task;
 void update_Task( void * pvParameters );
 
@@ -69,6 +75,11 @@ bool update_wifictl_event_cb( EventBits_t event, void *arg );
 void update_update_activate_cb( void );
 void update_update_hibernate_cb( void );
 void update_progress_task( lv_task_t *task );
+
+bool otactrl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
+bool otactrl_send_event_cb( EventBits_t event );
+
+portMUX_TYPE DRAM_ATTR otactrlMux = portMUX_INITIALIZER_UNLOCKED;
 
 LV_IMG_DECLARE(exit_32px);
 LV_IMG_DECLARE(setup_32px);
@@ -236,7 +247,8 @@ static void update_event_handler(lv_obj_t * obj, lv_event_t event) {
             delay(500);
             ESP.restart();
         }
-        else if ( xEventGroupGetBits( update_event_handle) & ( UPDATE_GET_VERSION_REQUEST | UPDATE_REQUEST ) )  {
+        else if ( xEventGroupGetBits( update_event_handle) & ( UPDATE_GET_VERSION_REQUEST | UPDATE_REQUEST ) )  {       
+            log_i("Already updating...");
             return;
         }
         else {
@@ -254,6 +266,7 @@ static void update_event_handler(lv_obj_t * obj, lv_event_t event) {
 void update_check_version( void ) {
     if ( xEventGroupGetBits( update_event_handle ) & ( UPDATE_GET_VERSION_REQUEST | UPDATE_REQUEST ) ) {
         return;
+        
     }
     else {
         xEventGroupSetBits( update_event_handle, UPDATE_GET_VERSION_REQUEST );
@@ -273,14 +286,27 @@ void update_Task( void * pvParameters ) {
     
     if ( xEventGroupGetBits( update_event_handle) & UPDATE_GET_VERSION_REQUEST ) {
 
-
         int64_t firmware_version = update_check_new_version( update_setup_get_url() );
         if ( firmware_version > atol( __FIRMWARE__ ) && firmware_version > 0 ) {
             char version_msg[48] = "";
             snprintf( version_msg, sizeof( version_msg ), "new version: %lld", firmware_version );
             lv_label_set_text( update_status_label, (const char*)version_msg );
             lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
-            setup_set_indicator( update_setup_icon, ICON_INDICATOR_1 );
+            setup_set_indicator( update_setup_icon, ICON_INDICATOR_1 );    
+           //Adicionado para realizar o Auto Firmware Update 
+
+ #ifdef          AUTO_UPDATE_AND_RESTART
+        
+           
+            xEventGroupSetBits( update_event_handle, UPDATE_REQUEST );
+            xTaskCreate(    update_Task,
+                            "Update Task_2",
+                            10000,
+                            NULL,
+                            2,
+                            &_update_Task );
+        
+#endif     
         }
         else if ( firmware_version == atol( __FIRMWARE__ ) ) {
             lv_label_set_text( update_status_label, "yeah! up to date ..." );
@@ -312,6 +338,21 @@ void update_Task( void * pvParameters ) {
                 lv_label_set_text( update_status_label, "update ok, turn off and on!" );
                 lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
                 lv_label_set_text( update_btn_label, "restart");
+
+#ifdef          AUTO_UPDATE_AND_RESTART
+                //Adicionado para realizar o Auto Reset 
+                delay(500);
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                log_i("System reboot by user");
+                motor_vibe(20);
+                delay(20);
+                display_standby();
+                ttgo->stopLvglTick();
+                SPIFFS.end();
+                log_i("SPIFFS unmounted!");
+                delay(500);
+                ESP.restart();    
+#endif
             }
             progress = 0;
             lv_bar_set_value( update_progressbar, 0 , LV_ANIM_ON );            
@@ -328,4 +369,41 @@ void update_Task( void * pvParameters ) {
     lv_obj_invalidate( lv_scr_act() );
     log_i("finish update task, heap: %d", ESP.getFreeHeap() );
     vTaskDelete( NULL );
+}
+
+
+
+bool otactrl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id ) {
+    if ( otactrl_callback == NULL ) {
+        otactrl_callback = callback_init( "Ota Ctrl" );
+        if ( otactrl_callback == NULL ) {
+            log_e("ota callback alloc failed");
+            while(true);
+        }
+    }    
+    return(callback_register( otactrl_callback, event, callback_func, id ));
+}
+
+bool otactrl_send_event_cb( EventBits_t event ) {
+    return( callback_send( otactrl_callback, event, (void*)NULL ) );
+}
+
+
+void otactrl_set_event( EventBits_t bits ){
+    portENTER_CRITICAL(&otactrlMux);
+    xEventGroupSetBits( update_event_handle, bits);
+    portEXIT_CRITICAL(&otactrlMux);
+}
+
+void otactrl_clear_event( EventBits_t bits){
+    portENTER_CRITICAL(&otactrlMux);
+    xEventGroupClearBits( update_event_handle, bits);
+    portEXIT_CRITICAL(&otactrlMux);
+}
+
+EventBits_t otactrl_get_event( EventBits_t bits){
+    portENTER_CRITICAL(&otactrlMux);
+    EventBits_t temp = xEventGroupGetBits( update_event_handle ) & bits;
+    portEXIT_CRITICAL(&otactrlMux);
+    return( temp );
 }

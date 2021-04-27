@@ -70,7 +70,7 @@ LV_IMG_DECLARE(sound_mute_32px);
 //LV_IMG_DECLARE(info_ok_16px);
 
 
-lv_status_bar_t statusicon[ STATUSBAR_NUM ] = 
+lv_status_bar_t statusicon[STATUSBAR_NUM] = 
 {
     { NULL, NULL, LV_ALIGN_IN_TOP_RIGHT, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_BATTERY_FULL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
@@ -279,6 +279,8 @@ void statusbar_setup( void )
     } else{
         statusbar_hide_icon( STATUSBAR_ALARM );
     }
+    statusbar_show_icon( STATUSBAR_MQTT );
+
     statusbar_hide_icon( STATUSBAR_VOLUME );
     statusbar_style_icon( STATUSBAR_BLUETOOTH, STATUSBAR_STYLE_GRAY );
 
@@ -289,7 +291,6 @@ void statusbar_setup( void )
     pmu_register_cb( PMUCTL_BATTERY_PERCENT | PMUCTL_CHARGING | PMUCTL_VBUS_PLUG, statusbar_pmuctl_event_cb, "statusbar pmu");
     sound_register_cb( SOUNDCTL_ENABLED | SOUNDCTL_VOLUME, statusbar_soundctl_event_cb, "statusbar sound");
     display_register_cb( DISPLAYCTL_BRIGHTNESS, statusbar_displayctl_event_cb, "statusbar display" );
-
     mqqtctrl_register_cb( MQTT_CONNECTED_FLAG | MQTT_DISCONNECTED_FLAG, statusbar_mqtt_event_cb, "statusbar mqtt" );
 
 
@@ -476,20 +477,51 @@ bool statusbar_mqtt_event_cb( EventBits_t event, void *arg ) {
                                     lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_OK );
                                     statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_GREEN );
                                     statusbar_show_icon( STATUSBAR_MQTT);
-    
-                                        break;
+                                    break;
+
             case MQTT_DISCONNECTED_FLAG: 
                                            
                                     lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_CLOSE );
                                     statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_RED ); 
                                     statusbar_show_icon(STATUSBAR_MQTT);
-
-                                        break;
+                                    break;
     }
 
     statusbar_refresh();
     return( true );
 }
+
+/*
+
+bool statusbar_ota_event_cb( EventBits_t event, void *arg ) {
+
+    switch( event ) {
+            case MQTT_CONNECTED_FLAG:               
+                                    
+                                    break;
+
+            case MQTT_DISCONNECTED_FLAG: 
+
+                                    break;
+    }
+
+    statusbar_refresh();
+    return( true );
+}
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -597,7 +629,6 @@ void statusbar_hide_icon( statusbar_icon_t icon ) {
 
 void statusbar_show_icon( statusbar_icon_t icon ) {
     if ( icon >= STATUSBAR_NUM ) return;
-
     lv_obj_set_hidden( statusicon[ icon ].icon, false );
 }
 

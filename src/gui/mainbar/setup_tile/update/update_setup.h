@@ -27,7 +27,7 @@
     #define UPDATE_CONFIG_FILE             "/update.cfg"
     #define UPDATE_JSON_CONFIG_FILE        "/update.json"
 
-    #define FIRMWARE_UPDATE_URL            "http://172.24.73.44:3015/testeconfig"
+
 
     typedef struct {
         bool autosync = true;

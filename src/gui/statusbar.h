@@ -26,7 +26,7 @@
     #include "config.h"
 
     #define STATUSBAR_HEIGHT            26
-    #define STATUSBAR_EXPAND_HEIGHT     250
+    #define STATUSBAR_EXPAND_HEIGHT     200
 
     typedef struct {
         lv_obj_t *icon;

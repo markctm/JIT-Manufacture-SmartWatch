@@ -106,6 +106,14 @@ extern volatile int wifi_connected;
 //#define WIFI_PASSWORD        "3348981600"
 
 
+
+
+#define FIRMWARE_UPDATE_URL            "http://172.24.73.44:3015/testeconfig"
+#define AUTO_UPDATE_AND_RESTART                     
+
+
+
+
 #define JABIL_SILENCE_WAKEUP_INTERVAL                       5
 
 #ifdef __cplusplus // Allows to include config.h from C code
