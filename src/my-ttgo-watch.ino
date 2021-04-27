@@ -108,6 +108,7 @@ void setup()
 
 
     heap_caps_malloc_extmem_enable( 16*1024 );
+    //heap_caps_malloc_extmem_enable( 16*2048 );
     blectl_setup();
     blectl_off();
     sound_setup();

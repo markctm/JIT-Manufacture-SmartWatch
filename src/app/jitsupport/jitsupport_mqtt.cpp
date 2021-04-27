@@ -51,7 +51,6 @@ void Mqtt_status_task( void * pvParameters );
 void Mqtt_Ctrl_task( void * pvParameters );
 
 
-
 callback_t *mqttctrl_callback = NULL;
 portMUX_TYPE DRAM_ATTR mqttcrlMux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -91,7 +90,7 @@ void mqttctrl_setup()
                              "Mqtt Init task",                             /* Name of the task */
                               2000,                                          /* Stack  Last measure 1368 */
                               NULL,                                          /* Task input parameter */
-                              1,                                             /* Priority of the task */
+                              0,                                             /* Priority of the task */
                               &_mqtt_init_task,                             /* Task handle. */
                               0);
   
@@ -100,7 +99,7 @@ void mqttctrl_setup()
                              "Mqtt Status task",                             /* Name of the task */
                               3000,                                          /* Stack  Last measure 1368 */
                               NULL,                                          /* Task input parameter */
-                              1,                                             /* Priority of the task */
+                              0,                                             /* Priority of the task */
                               &_mqttStatus_Task,                             /* Task handle. */
                               0);
     vTaskSuspend(_mqttStatus_Task);
@@ -110,7 +109,7 @@ void mqttctrl_setup()
                              "Mqtt Contrl",                                 /* Name of the task */
                               2000,                                         /* Stack size in words */
                               NULL,                                         /* Task input parameter */
-                              2,                                            /* Priority of the task */
+                              1,                                            /* Priority of the task */
                               &_mqttCtrl_Task,                              /* Task handle. */
                               0);
    //vTaskSuspend(_mqttCtrl_Task);
@@ -193,8 +192,6 @@ void Mqtt_status_task(void * pvParameters ){
 
           if(once_flag==0)
           {
-            log_i("oi ME INSCREVI");
-
             log_i("%s",receive_topic);
             log_i("%s",update_topic);
 
@@ -223,7 +220,6 @@ void Mqtt_status_task(void * pvParameters ){
         case(MQTT_CONNECT_FAILED):
                      
            log_i("MQTT Conection Failed...");
-           //xEventGroupSetBits(xMqttCtrlEvent,MQTT_DISCONNECTED_FLAG);  
             mqqtctrl_set_event(MQTT_DISCONNECTED_FLAG);
             mqqtctrl_send_event_cb(MQTT_DISCONNECTED_FLAG); 
         break;
@@ -231,7 +227,6 @@ void Mqtt_status_task(void * pvParameters ){
         case(MQTT_DISCONNECTED):
             
             log_i("MQTT Disconnected... ");
-            //xEventGroupSetBits(xMqttCtrlEvent,MQTT_DISCONNECTED_FLAG); 
             mqqtctrl_set_event(MQTT_DISCONNECTED_FLAG);
             mqqtctrl_send_event_cb(MQTT_DISCONNECTED_FLAG);          
 
@@ -240,7 +235,6 @@ void Mqtt_status_task(void * pvParameters ){
         case(MQTT_CONNECTION_TIMEOUT):
 
           log_i("MQTT timeout..."); 
-          //xEventGroupSetBits(xMqttCtrlEvent,MQTT_DISCONNECTED_FLAG);
           mqqtctrl_set_event(MQTT_DISCONNECTED_FLAG);
           mqqtctrl_send_event_cb(MQTT_DISCONNECTED_FLAG);           
 
@@ -249,7 +243,6 @@ void Mqtt_status_task(void * pvParameters ){
         case(MQTT_CONNECTION_LOST):
      
           log_i("MQTT lost connection... ");
-          //xEventGroupSetBits(xMqttCtrlEvent,MQTT_DISCONNECTED_FLAG);    
           mqqtctrl_set_event(MQTT_DISCONNECTED_FLAG);
           mqqtctrl_send_event_cb(MQTT_DISCONNECTED_FLAG);
         break;     

@@ -611,7 +611,6 @@ void Get_TeamMembers(void * pvParameters)
                       const char* user = elem["user"];                
                       deserializeJson(userObj, user);
                       auto text = userObj[0]["text"].as<const char*>();    
-                      log_i("oiiii %s",text);
                       char *UserTrim = strtok((char *)text," ");
                       strtok(NULL, " "); 
                       strcpy(Team_Members[num].Member_Name,UserTrim);
