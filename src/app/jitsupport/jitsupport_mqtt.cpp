@@ -54,7 +54,7 @@ void Mqtt_Ctrl_task( void * pvParameters );
 
 
 callback_t *mqttctrl_callback = NULL;
-portMUX_TYPE DRAM_ATTR mqttcrlMux = portMUX_INITIALIZER_UNLOCKED;
+//portMUX_TYPE DRAM_ATTR mqttcrlMux = portMUX_INITIALIZER_UNLOCKED;
 
 
 //***************PROTOTIPOS*****************//
@@ -111,7 +111,7 @@ void mqttctrl_setup()
                              "Mqtt Contrl",                                 /* Name of the task */
                               2000,                                         /* Stack size in words */
                               NULL,                                         /* Task input parameter */
-                              1,                                            /* Priority of the task */
+                              0,                                            /* Priority of the task */
                               &_mqttCtrl_Task,                              /* Task handle. */
                               0);
    //vTaskSuspend(_mqttCtrl_Task);
@@ -279,9 +279,7 @@ void MQTT2_set_subscribe_topics(char *topico_receber, char * topico_atualizar)
   log_i("topico cadastrado %s",receive_topic );
   log_i("topico cadastrado %s",update_topic );
   
-
 }
-
 
 void Mqtt_Ctrl_task(void * pvParameters)
 {  
@@ -300,21 +298,21 @@ void Mqtt_Ctrl_task(void * pvParameters)
 }
    
 void mqqtctrl_set_event( EventBits_t bits ){
-    portENTER_CRITICAL(&mqttcrlMux);
+   // portENTER_CRITICAL(&mqttcrlMux);
     xEventGroupSetBits( xMqttCtrlEvent, bits);
-    portEXIT_CRITICAL(&mqttcrlMux);
+    //portEXIT_CRITICAL(&mqttcrlMux);
 }
 
 void mqqtctrl_clear_event( EventBits_t bits){
-    portENTER_CRITICAL(&mqttcrlMux);
+    //portENTER_CRITICAL(&mqttcrlMux);
     xEventGroupClearBits( xMqttCtrlEvent, bits);
-    portEXIT_CRITICAL(&mqttcrlMux);
+    //portEXIT_CRITICAL(&mqttcrlMux);
 }
 
 EventBits_t mqqtctrl_get_event( EventBits_t bits){
-    portENTER_CRITICAL(&mqttcrlMux);
+    //portENTER_CRITICAL(&mqttcrlMux);
     EventBits_t temp = xEventGroupGetBits( xMqttCtrlEvent ) & bits;
-    portEXIT_CRITICAL(&mqttcrlMux);
+    //portEXIT_CRITICAL(&mqttcrlMux);
     return( temp );
 }
 

@@ -28,11 +28,11 @@
     #define PMUCTL_BATTERY_PERCENT      _BV(0)                  /** @brief event mask for pmuctl battery percent update, callback arg is (int32_t*) */
     #define PMUCTL_VBUS_PLUG            _BV(1)                  /** @brief event mask for pmuctl plug/unplug update, callback arg is (bool*) */
     #define PMUCTL_CHARGING             _BV(2)                  /** @brief event mask for pmuctl charging, callback arg is (bool*) */
-
     #define PMU_JSON_CONFIG_FILE    "/pmu.json"                 /** @brief defines json config file name */
 
 	//Some default values, used below as well as in pmu.cpp during json reads
-    #define SILENCEWAKEINTERVAL             3                  /** @brief defines the silence wakeup interval in minutes */
+
+    #define SILENCEWAKEINTERVAL             3                   /** @brief defines the silence wakeup interval in minutes */
 	#define SILENCEWAKEINTERVAL_PLUG		3                   /** @brief defines the silence wakeup interval in minutes when plugged*/
     #define NORMALVOLTAGE                   3300                /** @brief defines the norminal voltages while working */
     #define NORMALPOWERSAVEVOLTAGE          3000                /** @brief defines the norminal voltages while in powersave */

@@ -21,8 +21,6 @@
  */
 #include "config.h"
 #include <stdio.h>
-
-#include "config.h"
 #include <Arduino.h>
 #include <time.h>
 #include "gui.h"
@@ -41,12 +39,13 @@
 #include "hardware/pmu.h"
 #include "hardware/sound.h"
 #include "hardware/display.h"
+#include "hardware/http_ota.h"
 
 #include "gui/mainbar/mainbar.h"
 #include "gui/mainbar/setup_tile/wlan_settings/wlan_settings.h"
 #include "gui/mainbar/setup_tile/bluetooth_settings/bluetooth_settings.h"
 #include "app/jitsupport/jitsupport_mqtt.h"
-
+#include "gui/mainbar/setup_tile/update/update.h"
 
 static lv_obj_t *statusbar = NULL;
 static lv_obj_t *statusbar_wifi = NULL;
@@ -80,7 +79,8 @@ lv_status_bar_t statusicon[STATUSBAR_NUM] =
     { NULL, LV_SYMBOL_BELL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_WARNING, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL,  &alarm_16px, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
-    { NULL,  LV_SYMBOL_CLOSE, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_RED ]}, // MQTT SYMBOL
+    { NULL,  LV_SYMBOL_CLOSE, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_RED ]},       // MQTT SYMBOL
+    { NULL,  LV_SYMBOL_REFRESH, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ]},     // REFRESH SYMBOL
 };
 
 bool should_save_brightness_config = false;
@@ -101,11 +101,14 @@ bool statusbar_bmactl_event_cb( EventBits_t event, void *arg );
 bool statusbar_pmuctl_event_cb( EventBits_t event, void *arg );
 bool statusbar_displayctl_event_cb( EventBits_t event, void *arg );
 
-bool statusbar_mqtt_event_cb( EventBits_t event, void *arg );
-
 void statusbar_wifi_set_state( bool state, const char *wifiname );
 void statusbar_wifi_set_ip_state( bool state, const char *ip );
 void statusbar_bluetooth_set_state( bool state );
+
+
+bool statusbar_mqtt_event_cb( EventBits_t event, void *arg );
+bool update_event_cb( EventBits_t event, void *arg );
+
 
 lv_task_t * statusbar_task;
 void statusbar_update_task( lv_task_t * task );
@@ -274,6 +277,8 @@ void statusbar_setup( void )
     statusbar_hide_icon( STATUSBAR_WARNING );
     statusbar_hide_icon( STATUSBAR_WIFI );
     statusbar_hide_icon( STATUSBAR_BLUETOOTH );
+     statusbar_hide_icon( STATUSBAR_UPDATE );
+    
     if (rtcctl_get_alarm_data()->enabled){
         statusbar_show_icon( STATUSBAR_ALARM );
     } else{
@@ -292,6 +297,10 @@ void statusbar_setup( void )
     sound_register_cb( SOUNDCTL_ENABLED | SOUNDCTL_VOLUME, statusbar_soundctl_event_cb, "statusbar sound");
     display_register_cb( DISPLAYCTL_BRIGHTNESS, statusbar_displayctl_event_cb, "statusbar display" );
     mqqtctrl_register_cb( MQTT_CONNECTED_FLAG | MQTT_DISCONNECTED_FLAG, statusbar_mqtt_event_cb, "statusbar mqtt" );
+
+    //update_register_cb( UPDATE_ON_GOING, update_event_cb, "statusbar update" );
+
+    http_ota_register_cb(HTTP_OTA_START| HTTP_OTA_FINISH|HTTP_OTA_ERROR|HTTP_OTA_PROGRESS, update_event_cb, "statusbar update" );
 
 
     lv_slider_set_value( statusbar_brightness_slider, display_get_brightness(), LV_ANIM_OFF );
@@ -491,38 +500,41 @@ bool statusbar_mqtt_event_cb( EventBits_t event, void *arg ) {
     return( true );
 }
 
-/*
 
-bool statusbar_ota_event_cb( EventBits_t event, void *arg ) {
+
+
+bool update_event_cb( EventBits_t event, void *arg ) {
 
     switch( event ) {
-            case MQTT_CONNECTED_FLAG:               
-                                    
+
+            case HTTP_OTA_START:                                                                              
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE );
+                                    statusbar_show_icon( STATUSBAR_UPDATE );
                                     break;
 
-            case MQTT_DISCONNECTED_FLAG: 
-
+            case HTTP_OTA_PROGRESS: 
+                                                          
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE );
+                                    statusbar_show_icon( STATUSBAR_UPDATE ); 
                                     break;
+
+            case HTTP_OTA_ERROR: 
+                                                          
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE ); 
+                                    statusbar_hide_icon( STATUSBAR_UPDATE );
+                                    break;
+
+            
+            case HTTP_OTA_FINISH: 
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE ); 
+                                    statusbar_hide_icon( STATUSBAR_UPDATE );
+                                                          
+                                    break;
+
     }
-
     statusbar_refresh();
     return( true );
 }
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 void statusbar_volume_slider_event_handler_cb(lv_obj_t *volume_slider, lv_event_t event)
@@ -644,7 +656,7 @@ void statusbar_refresh( void ) {
             if ( last_visible == NULL ) {
                 lv_obj_align( statusicon[ i ].icon, NULL, statusicon[ i ].align, -5, 4);
             } else {
-                lv_obj_align( statusicon[ i ].icon, last_visible, statusicon[ i ].align, -5, 0);
+                lv_obj_align( statusicon[ i ].icon, last_visible, statusicon[ i ].align, -7, 0);
             }
             lv_obj_reset_style_list( statusicon[ i ].icon, LV_OBJ_PART_MAIN );
             lv_obj_add_style( statusicon[ i ].icon, LV_OBJ_PART_MAIN, statusicon[i].style );

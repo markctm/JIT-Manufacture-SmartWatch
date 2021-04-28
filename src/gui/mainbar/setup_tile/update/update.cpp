@@ -76,10 +76,7 @@ void update_update_activate_cb( void );
 void update_update_hibernate_cb( void );
 void update_progress_task( lv_task_t *task );
 
-bool otactrl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
-bool otactrl_send_event_cb( EventBits_t event );
 
-portMUX_TYPE DRAM_ATTR otactrlMux = portMUX_INITIALIZER_UNLOCKED;
 
 LV_IMG_DECLARE(exit_32px);
 LV_IMG_DECLARE(setup_32px);
@@ -274,7 +271,7 @@ void update_check_version( void ) {
                         "update Task",
                         5000,
                         NULL,
-                        2,
+                        1,
                         &_update_Task );
     }
 }
@@ -296,8 +293,7 @@ void update_Task( void * pvParameters ) {
            //Adicionado para realizar o Auto Firmware Update 
 
  #ifdef          AUTO_UPDATE_AND_RESTART
-        
-           
+            
             xEventGroupSetBits( update_event_handle, UPDATE_REQUEST );
             xTaskCreate(    update_Task,
                             "Update Task_2",
@@ -373,37 +369,6 @@ void update_Task( void * pvParameters ) {
 
 
 
-bool otactrl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id ) {
-    if ( otactrl_callback == NULL ) {
-        otactrl_callback = callback_init( "Ota Ctrl" );
-        if ( otactrl_callback == NULL ) {
-            log_e("ota callback alloc failed");
-            while(true);
-        }
-    }    
-    return(callback_register( otactrl_callback, event, callback_func, id ));
-}
-
-bool otactrl_send_event_cb( EventBits_t event ) {
-    return( callback_send( otactrl_callback, event, (void*)NULL ) );
-}
 
 
-void otactrl_set_event( EventBits_t bits ){
-    portENTER_CRITICAL(&otactrlMux);
-    xEventGroupSetBits( update_event_handle, bits);
-    portEXIT_CRITICAL(&otactrlMux);
-}
 
-void otactrl_clear_event( EventBits_t bits){
-    portENTER_CRITICAL(&otactrlMux);
-    xEventGroupClearBits( update_event_handle, bits);
-    portEXIT_CRITICAL(&otactrlMux);
-}
-
-EventBits_t otactrl_get_event( EventBits_t bits){
-    portENTER_CRITICAL(&otactrlMux);
-    EventBits_t temp = xEventGroupGetBits( update_event_handle ) & bits;
-    portEXIT_CRITICAL(&otactrlMux);
-    return( temp );
-}

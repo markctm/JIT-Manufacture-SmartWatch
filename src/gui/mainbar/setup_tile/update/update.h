@@ -29,11 +29,11 @@
     #define UPDATE_REQUEST              _BV(0)
     #define UPDATE_GET_VERSION_REQUEST  _BV(1)
     #define UPDATE_ON_GOING             _BV(2)
+    #define NO_UPDATE_GOING             _BV(3)
 
     void update_tile_setup( void );
     void update_check_version( void );
     void update_update_firmware( void );
 
-    bool update_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
 
 #endif // _UPDATE_H
