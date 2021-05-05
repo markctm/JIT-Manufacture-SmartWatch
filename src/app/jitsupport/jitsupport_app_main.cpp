@@ -605,12 +605,20 @@ void Get_TeamMembers(void * pvParameters)
                 else{
                     uint8_t num=0;
                     StaticJsonDocument<256> userObj;
+                    StaticJsonDocument<256> areaObj;
 
                     for (JsonObject elem : doc3.as<JsonArray>()) {
 
-                      const char* user = elem["user"];                
+                      const char* user = elem["user"];
+                      const char* area = elem["area"];
+
                       deserializeJson(userObj, user);
-                      auto text = userObj[0]["text"].as<const char*>();    
+                      deserializeJson(areaObj, area);
+
+                      auto text = userObj[0]["text"].as<const char*>(); 
+                      auto my_local = areaObj[0]["text"].as<const char*>();
+                      log_i("%s", my_local);
+
                       char *UserTrim = strtok((char *)text," ");
                       strtok(NULL, " "); 
                       strcpy(Team_Members[num].Member_Name,UserTrim);
@@ -620,6 +628,9 @@ void Get_TeamMembers(void * pvParameters)
                       num++; 
                     }
 
+                     
+                     //-------------- INSERE TEAM MEMBER -----------------------
+                     
                      if(strcmp(Team_Members[0].Member_Name," ")==0)
                      {
                        // Rolou algum problema Pelo Menos uma pessoa é obrigatório ter no time 
@@ -628,7 +639,7 @@ void Get_TeamMembers(void * pvParameters)
                      }
                      else{
                        
-                          //todo melhorar implementação 
+                        //Melhorar implementação 
 
                         lv_obj_t * lbl_Teamstatus[num-1];
                         lv_obj_t * lbl_team;
@@ -649,6 +660,20 @@ void Get_TeamMembers(void * pvParameters)
                          vTaskDelete(NULL);   
                      }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 }
 
              } 
@@ -658,9 +683,7 @@ void Get_TeamMembers(void * pvParameters)
 
     vTaskDelay(2000/ portTICK_PERIOD_MS );
   }
-
 }
-
 
 void Get_User(void * pvParameters)
 {
@@ -677,6 +700,7 @@ void Get_User(void * pvParameters)
 #ifdef NEW_MQTT_IMPLEMENTATION
                 MQTT2_set_client(ip_address);
                 MQTT2_set_subscribe_topics(nometopico,atualizartopico);
+                
                 log_i("setando evento de conexão mqtt");
                 vTaskDelay(1000/ portTICK_PERIOD_MS );
                 mqqtctrl_set_event(MQTT_START_CONNECTION);

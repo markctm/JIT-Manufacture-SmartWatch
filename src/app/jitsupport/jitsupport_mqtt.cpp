@@ -24,16 +24,20 @@
 #include "Arduino.h"
 
 #include "jitsupport_mqtt.h"
-#include "hardware/powermgm.h"
 
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <PubSubClient.h>
 
+#include "jitsupport_app_main.h"
+
 #include "hardware/wifictl.h"
 #include "hardware/callback.h"
+#include "hardware/display.h"
+#include "hardware/powermgm.h"
+#include "hardware/motor.h"
 
-#include "jitsupport_app_main.h"
+
 
 //***************  MQTT ******************//
 
@@ -101,7 +105,7 @@ void mqttctrl_setup()
                              "Mqtt Status task",                             /* Name of the task */
                               3000,                                          /* Stack  Last measure 1368 */
                               NULL,                                          /* Task input parameter */
-                              0,                                             /* Priority of the task */
+                              1,                                             /* Priority of the task */
                               &_mqttStatus_Task,                             /* Task handle. */
                               0);
     vTaskSuspend(_mqttStatus_Task);
@@ -111,7 +115,7 @@ void mqttctrl_setup()
                              "Mqtt Contrl",                                 /* Name of the task */
                               2000,                                         /* Stack size in words */
                               NULL,                                         /* Task input parameter */
-                              0,                                            /* Priority of the task */
+                              1,                                            /* Priority of the task */
                               &_mqttCtrl_Task,                              /* Task handle. */
                               0);
    //vTaskSuspend(_mqttCtrl_Task);
@@ -130,7 +134,6 @@ void Mqtt_init_task( void * pvParameters )
           vTaskResume(_mqttStatus_Task);
           vTaskDelete(NULL);
     }
-
 }
 
 
@@ -139,7 +142,18 @@ void MQTT2_callback(char* topic, byte* message, unsigned int length)
   log_i("Message arrived on topic: ");
   log_i("%s", topic);
   
-  MQTT_callback(topic, message,length);
+  
+  // DEFINE WHERE TO  GO ACCORDING TO TOPIC IN USE 
+ // if(strcmp(topic,"")==0){
+  
+  
+  //}
+  //else
+  //{
+    MQTT_callback(topic, message,length);
+  //}
+
+
   
 }
 
@@ -147,6 +161,7 @@ void MQTT2_publish(char *atualizartopico, char *payload)
 {
   client2.publish(atualizartopico, payload);
 }
+
 
 bool jit_mqtt_powermgm_loop_cb(EventBits_t event, void *arg )
 {
@@ -210,8 +225,7 @@ void Mqtt_status_task(void * pvParameters ){
                 log_i(" Problem while Subscribe");
                 once_flag=0;
 
-            }
-         
+            }      
           }
 
           mqqtctrl_set_event(MQTT_CONNECTED_FLAG);
@@ -269,6 +283,7 @@ void MQTT2_set_client(char *client_name)
   log_i("topico cadastrado %s",ip_client );
 }
 
+//, char * topico_area
 
 void MQTT2_set_subscribe_topics(char *topico_receber, char * topico_atualizar)
 {
@@ -329,4 +344,21 @@ bool mqqtctrl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const
 
 bool mqqtctrl_send_event_cb( EventBits_t event ) {
     return( callback_send( mqttctrl_callback, event, (void*)NULL ) );
+}
+
+
+
+void cmd_reset() {
+
+TTGOClass *ttgo = TTGOClass::getWatch();
+log_i("System reboot by user");
+motor_vibe(20);
+delay(20);
+display_standby();
+ttgo->stopLvglTick();
+SPIFFS.end();
+log_i("SPIFFS unmounted!");
+delay(500);
+ESP.restart();    
+
 }
