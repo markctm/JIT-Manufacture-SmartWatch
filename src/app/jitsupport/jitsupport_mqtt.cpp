@@ -77,7 +77,8 @@ void MQTT2_set_client(char *ip_adrress);
 //**************Variaveis**********************//
 
 char receive_topic[15];
-char update_topic[15]; 
+char update_topic[15];
+char area_topic[20];  
 char ip_client[15];
 
 void mqttctrl_setup()
@@ -211,9 +212,12 @@ void Mqtt_status_task(void * pvParameters ){
           {
             log_i("%s",receive_topic);
             log_i("%s",update_topic);
+            log_i("%s",area_topic);
+
 
             subscribe_flag1=client2.subscribe(receive_topic,1);
             subscribe_flag2 =client2.subscribe(update_topic,1);
+            subscribe_flag2 =client2.subscribe(area_topic,1);
 
             if((subscribe_flag1==true)&&(subscribe_flag2==true))
             {
@@ -279,22 +283,25 @@ void MQTT2_set_client(char *client_name)
 {
    
   strcpy(ip_client,client_name);
-
   log_i("topico cadastrado %s",ip_client );
+
 }
 
 //, char * topico_area
 
-void MQTT2_set_subscribe_topics(char *topico_receber, char * topico_atualizar)
+void MQTT2_set_subscribe_topics(char *topico_receber, char * topico_atualizar, char *topico_area )
 {
 
   strcpy(receive_topic,topico_receber);
   strcpy(update_topic,topico_atualizar);
+  strcpy(area_topic,topico_area);
 
-  log_i("topico cadastrado %s",receive_topic );
-  log_i("topico cadastrado %s",update_topic );
+  log_i("topico cadastrado %s",receive_topic);
+  log_i("topico cadastrado %s",update_topic);
+  log_i("topico cadastrado %s",area_topic);
   
 }
+
 
 void Mqtt_Ctrl_task(void * pvParameters)
 {  
