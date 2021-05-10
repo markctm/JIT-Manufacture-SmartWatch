@@ -105,8 +105,8 @@ bool jit_wifictl_event_cb( EventBits_t event, void *arg );
 
 void MQTT_callback(char* topic, byte* message, unsigned int length);
 bool jitsupport_mqttctrl_event_cb(EventBits_t event, void *arg );
-static void pub_mqtt(lv_obj_t *obj, lv_event_t event);
-void mqtt_reconnect();
+
+
 
 
 //---------------MQTT---------------------
@@ -129,13 +129,11 @@ char nomefull[100];
 
 EventGroupHandle_t xMqttEvent=NULL;
 portMUX_TYPE DRAM_ATTR mqttMux = portMUX_INITIALIZER_UNLOCKED;
-TaskHandle_t _mqttCheck_Task, _Reconnect_Task,_Get_User_Task,_Get_TeamMembers_Task=NULL;
+TaskHandle_t _Get_User_Task,_Get_TeamMembers_Task=NULL;
 callback_t *mqtt_callback = NULL;
 
 void Get_User(void * pvParameters);
 void Get_User(void * pvParameters);
-void Check_MQTT_Task( void * pvParameters );
-void Mqtt_Reconnect( void * pvParameters );
 bool mqtt_send_event_cb( EventBits_t event, void *arg);
 
 
@@ -878,10 +876,21 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
           
           strcpy(comando,result["comando"]);
           log_i("%s",comando);
-             
-          //if(strcmp(c,"reset")==0){  
-         //   cmd_reset();
-          //}
+                    
+          if(strcmp(comando,"reset")==0){  
+            
+            log_i("Reset Command Received");
+            cmd_reset();
+
+          }
+
+          if(strcmp(comando,"update")==0){  
+            
+            log_i("Reset Command Received");
+            delay(2000);
+            cmd_reset();
+            
+          }
 
         }
 
@@ -894,44 +903,6 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
  
 }
 
-
-
-static void pub_mqtt(lv_obj_t *obj, lv_event_t event)
-{
-    if (event == LV_EVENT_CLICKED) {
-        log_i("Mqtt publish \n");
-      client.publish("esp32/output", "***** sending test message******");
-
-    } 
-    
-}
-
-
-
-void Mqtt_Reconnect(void * pvParameters)
-{  
-    EventBits_t xBits;
-    while(1)
-    {     
-        
-        xBits=xEventGroupWaitBits(xMqttEvent,MQTT_DISCONNECTED_FLAG,pdTRUE,pdTRUE,portMAX_DELAY); 
-            
-            if(wifi_connected==1)
-            {  
-              
-                if(!pegueiUser)getWatchUser();
-                log_i("MQTT reconnection...");                     
-                log_i("%s",ip_address);
-
-                if (client.connect(ip_address, MQTT_USER, MQTT_PSSWD,"status_team/16", 1, 1,"oi", MQTT_CLEAN_SESSION))
-                {                             
-                  log_i("MQQT Connected");    
-                }
-                else  log_i("Failed !");     
-            }
-        
-        }
-}
 
 
 uint8_t get_number_tickets()

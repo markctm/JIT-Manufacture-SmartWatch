@@ -143,17 +143,7 @@ void MQTT2_callback(char* topic, byte* message, unsigned int length)
   log_i("Message arrived on topic: ");
   log_i("%s", topic);
   
-  
-  // DEFINE WHERE TO  GO ACCORDING TO TOPIC IN USE 
- // if(strcmp(topic,"")==0){
-  
-  
-  //}
-  //else
-  //{
-    MQTT_callback(topic, message,length);
-  //}
-
+  MQTT_callback(topic, message,length);
 
   
 }
@@ -307,14 +297,44 @@ void Mqtt_Ctrl_task(void * pvParameters)
 {  
     EventBits_t xBits;
 
+    static bool first_connection_flag=true;
+
     while(1)
     {     
           xBits=xEventGroupWaitBits(xMqttCtrlEvent,MQTT_DISCONNECTED_FLAG, pdTRUE,pdTRUE,portMAX_DELAY); 
           log_i("MQTT reconnection...");
           log_i("%s",ip_client);
-          if (client2.connect(ip_client, MQTT_USER, MQTT_PSSWD,"status_team/16", 1, 1,"oi", MQTT_CLEAN_SESSION))log_i("MQQT Connected");  
-          else  log_i("Failed !");    
+          
+          
+          if(first_connection_flag)
+          {
+            // ----- ANTI RAJADA DE MENSAGENS NO BOOT -----
 
+            if (client2.connect(ip_client, MQTT_USER, MQTT_PSSWD,"status_team", 1, 1,"off", 1)){
+              
+              // OK CONNECTED CLEAN SESSION TRUE 
+              first_connection_flag=false;
+              client2.disconnect();
+              
+              if(client2.connect(ip_client, MQTT_USER, MQTT_PSSWD,"status_team", 1, 1,"off", MQTT_CLEAN_SESSION)){
+                
+                // OK NOW CONNECTED CLEAN SESSION FALSE
+                first_connection_flag=false;   
+                log_i("MQQT Connected");  
+              } 
+              else  log_i("Failed !");
+            } 
+
+          }
+          else
+          {
+
+            // IF YOU ARE HERE  YOU ARE FACING A MQTT RECONNECTION !!
+            if (client2.connect(ip_client, MQTT_USER, MQTT_PSSWD,"status_team", 1, 1,"off", MQTT_CLEAN_SESSION))log_i("MQQT Connected");  
+            else  log_i("Failed !"); 
+          }
+
+        
     }
 
 }

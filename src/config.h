@@ -106,7 +106,6 @@ extern volatile int wifi_connected;
 
 
 
-
 #define FIRMWARE_UPDATE_URL            "http://172.24.73.44:3015/testeconfig"
 #define AUTO_UPDATE_AND_RESTART                     
 
