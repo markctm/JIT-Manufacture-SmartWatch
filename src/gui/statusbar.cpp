@@ -78,8 +78,8 @@ lv_status_bar_t statusicon[STATUSBAR_NUM] =
     { NULL, LV_SYMBOL_VOLUME_MAX, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_BELL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_WARNING, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
-    { NULL,  &alarm_16px, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
-    { NULL,  LV_SYMBOL_CLOSE, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_RED ]},       // MQTT SYMBOL
+    { NULL,  LV_SYMBOL_BELL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
+    { NULL,  LV_SYMBOL_CLOSE, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ]},       // MQTT SYMBOL
     { NULL,  LV_SYMBOL_REFRESH, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ]},     // REFRESH SYMBOL
 };
 
@@ -484,14 +484,14 @@ bool statusbar_mqtt_event_cb( EventBits_t event, void *arg ) {
             case MQTT_CONNECTED_FLAG:               
                                     
                                     lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_OK );
-                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_GREEN );
+                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_WHITE );
                                     statusbar_show_icon( STATUSBAR_MQTT);
                                     break;
 
             case MQTT_DISCONNECTED_FLAG: 
                                            
                                     lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_CLOSE );
-                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_RED ); 
+                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_WHITE ); 
                                     statusbar_show_icon(STATUSBAR_MQTT);
                                     break;
     }

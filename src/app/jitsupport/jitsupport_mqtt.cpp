@@ -313,7 +313,6 @@ void Mqtt_Ctrl_task(void * pvParameters)
             if (client2.connect(ip_client, MQTT_USER, MQTT_PSSWD,"status_team", 1, 1,"off", 1)){
               
               // OK CONNECTED CLEAN SESSION TRUE 
-              first_connection_flag=false;
               client2.disconnect();
               
               if(client2.connect(ip_client, MQTT_USER, MQTT_PSSWD,"status_team", 1, 1,"off", MQTT_CLEAN_SESSION)){

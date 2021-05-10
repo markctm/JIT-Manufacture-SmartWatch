@@ -49,7 +49,7 @@
 
 
 extern volatile int wifi_connected;
-
+extern int boot_finish;
 
 //------MQTT---CONNECTION------
 //#define MQTT_BROKER_MOSQUITTO                        

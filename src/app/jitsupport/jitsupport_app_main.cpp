@@ -29,6 +29,8 @@
 
 #include "gui/mainbar/app_tile/app_tile.h"
 #include "gui/mainbar/main_tile/main_tile.h"
+#include "gui/mainbar/setup_tile/update/update.h"
+
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "hardware/motor.h"
@@ -886,9 +888,9 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
 
           if(strcmp(comando,"update")==0){  
             
-            log_i("Reset Command Received");
-            delay(2000);
-            cmd_reset();
+            log_i("Reset Update Received");
+            update_check_version(); 
+            //cmd_reset();
             
           }
 

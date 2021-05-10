@@ -45,6 +45,7 @@
 //------------INCLUDE APPS--------------
 #include "app/jitsupport/jitsupport_app.h"
 
+int boot_finish=0;
 
 
 TTGOClass *ttgo = TTGOClass::getWatch();
@@ -124,6 +125,8 @@ void setup()
 
     disableCore0WDT();
     callback_print();
+
+    boot_finish=1;  // estudar uma forma de fazer isso melhor 
     
 }
 

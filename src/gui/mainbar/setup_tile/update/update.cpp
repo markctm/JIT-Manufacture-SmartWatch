@@ -199,10 +199,20 @@ bool update_http_ota_event_cb( EventBits_t event, void *arg ) {
 bool update_wifictl_event_cb( EventBits_t event, void *arg ) {
     switch( event ) {
         case WIFICTL_CONNECT:
-            if ( update_setup_get_autosync() && reset == false ) {
+           
+           //if ( update_setup_get_autosync() && reset == false ) {
+           //     update_check_version();
+           //     break;
+           // }
+
+           log_i("Wifi connected Check for update");
+           if ((boot_finish==1)&&( reset == false )){ 
+ 
+                log_i("Wifi connected and boot finished Check for update");
                 update_check_version();
                 break;
             }
+              
     }
     return( true );
 }
@@ -294,6 +304,7 @@ void update_Task( void * pvParameters ) {
 
  #ifdef          AUTO_UPDATE_AND_RESTART
             
+            xEventGroupClearBits( update_event_handle, UPDATE_GET_VERSION_REQUEST );
             xEventGroupSetBits( update_event_handle, UPDATE_REQUEST );
             xTaskCreate(    update_Task,
                             "Update Task_2",
@@ -327,6 +338,10 @@ void update_Task( void * pvParameters ) {
 
             lv_label_set_text( update_status_label, "start update ..." );
             lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
+ 
+            powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
+
+
 
             if ( http_ota_start( update_get_url(), update_get_md5() ) ) {
                 reset = true;
@@ -350,6 +365,7 @@ void update_Task( void * pvParameters ) {
                 ESP.restart();    
 #endif
             }
+
             progress = 0;
             lv_bar_set_value( update_progressbar, 0 , LV_ANIM_ON );            
             display_set_timeout( display_timeout );

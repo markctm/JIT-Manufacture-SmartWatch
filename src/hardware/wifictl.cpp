@@ -258,7 +258,7 @@ void wifi_restablish_Task( void * pvParameters)
                 ct_Wifi_retry=0;
                 wifi_connected=1;
                 Serial.println("Wifi Reestabelecido !!");
-                 wifictl_set_event( WIFICTL_CONNECT | WIFICTL_ACTIVE );
+                wifictl_set_event( WIFICTL_CONNECT | WIFICTL_ACTIVE );
                 vTaskSuspend( _wifi_restabilsh_Task);
               }
 
