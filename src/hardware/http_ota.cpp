@@ -121,15 +121,15 @@ bool http_ota_start( const char* url, const char* md5 ) {
             }
         }
         else {
-            //http_ota_clear_event( HTTP_OTA_START); 
+           
             http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Flashing init ... failed!" );
             log_e("Flashing init ... failed!");
         }
-        //http_ota_clear_event( HTTP_OTA_START); 
+
         http_ota_send_event_cb( HTTP_OTA_FINISH, (void*)NULL );
     }
     else {
-        //http_ota_clear_event( HTTP_OTA_START); 
+    
         http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"[HTTP] GET... failed!" );
         log_e("[HTTP] GET... failed!");
         ret = false;        
@@ -138,17 +138,17 @@ bool http_ota_start( const char* url, const char* md5 ) {
 
     if( downloaded == total && len == 0 ) {
         if( Update.end() ) {
-            //http_ota_clear_event( HTTP_OTA_START); 
+ 
             http_ota_send_event_cb( HTTP_OTA_FINISH, (void*)"Flashing ... done!" );
             log_i("Flashing ... done!");
         } else {
-            //http_ota_clear_event( HTTP_OTA_START); 
+
             http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Flashing md5 ... failed!" );
             log_e("Flashing md5 ... failed!");
             ret = false;
         }
     } else {
-        //http_ota_clear_event( HTTP_OTA_START); 
+     
         http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Download firmware ... failed!" );
         log_e("Download firmware ... failed!");
         ret = false;

@@ -272,6 +272,8 @@ static void update_event_handler(lv_obj_t * obj, lv_event_t event) {
 
 void update_check_version( void ) {
     if ( xEventGroupGetBits( update_event_handle ) & ( UPDATE_GET_VERSION_REQUEST | UPDATE_REQUEST ) ) {
+
+        log_i("Not possible create another task");
         return;
         
     }
@@ -285,6 +287,8 @@ void update_check_version( void ) {
                         &_update_Task );
     }
 }
+
+
 
 void update_Task( void * pvParameters ) {
     log_i("Start update task, heap: %d", ESP.getFreeHeap() );
@@ -302,18 +306,21 @@ void update_Task( void * pvParameters ) {
             setup_set_indicator( update_setup_icon, ICON_INDICATOR_1 );    
            //Adicionado para realizar o Auto Firmware Update 
 
- #ifdef          AUTO_UPDATE_AND_RESTART
-            
-            xEventGroupClearBits( update_event_handle, UPDATE_GET_VERSION_REQUEST );
-            xEventGroupSetBits( update_event_handle, UPDATE_REQUEST );
-            xTaskCreate(    update_Task,
-                            "Update Task_2",
-                            10000,
-                            NULL,
-                            2,
-                            &_update_Task );
+            #ifdef          AUTO_UPDATE_AND_RESTART
+                        
+                       xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
+                       xEventGroupSetBits( update_event_handle, UPDATE_REQUEST );
+                       xTaskCreate(    update_Task,
+                                       "Update Task_2",
+                                       10000,
+                                       NULL,
+                                       2,
+                                       &_update_Task );
+                    
+            #endif     
         
-#endif     
+        
+        
         }
         else if ( firmware_version == atol( __FIRMWARE__ ) ) {
             lv_label_set_text( update_status_label, "yeah! up to date ..." );
@@ -373,10 +380,13 @@ void update_Task( void * pvParameters ) {
         }
         else {
             lv_label_set_text( update_status_label, "turn wifi on!" );
-            lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );  
+            lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
+
         }
+
+         xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
     }
-    xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
+   // xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
     lv_disp_trig_activity(NULL);
     lv_obj_invalidate( lv_scr_act() );
     log_i("finish update task, heap: %d", ESP.getFreeHeap() );
