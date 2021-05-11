@@ -38,9 +38,15 @@
 #include "hardware/wifictl.h"
 #include "hardware/motor.h"
 #include "hardware/http_ota.h"
+#include "hardware/callback.h"
+
+
 
 EventGroupHandle_t update_event_handle = NULL;
 TaskHandle_t _update_Task;
+callback_t *otactrl_callback = NULL;
+
+
 lv_task_t *_update_progress_task;
 void update_Task( void * pvParameters );
 
@@ -69,6 +75,8 @@ bool update_wifictl_event_cb( EventBits_t event, void *arg );
 void update_update_activate_cb( void );
 void update_update_hibernate_cb( void );
 void update_progress_task( lv_task_t *task );
+
+
 
 LV_IMG_DECLARE(exit_32px);
 LV_IMG_DECLARE(setup_32px);
@@ -191,10 +199,20 @@ bool update_http_ota_event_cb( EventBits_t event, void *arg ) {
 bool update_wifictl_event_cb( EventBits_t event, void *arg ) {
     switch( event ) {
         case WIFICTL_CONNECT:
-            if ( update_setup_get_autosync() && reset == false ) {
+           
+           //if ( update_setup_get_autosync() && reset == false ) {
+           //     update_check_version();
+           //     break;
+           // }
+
+           log_i("Wifi connected Check for update");
+           if ((boot_finish==1)&&( reset == false )){ 
+ 
+                log_i("Wifi connected and boot finished Check for update");
                 update_check_version();
                 break;
             }
+              
     }
     return( true );
 }
@@ -236,7 +254,8 @@ static void update_event_handler(lv_obj_t * obj, lv_event_t event) {
             delay(500);
             ESP.restart();
         }
-        else if ( xEventGroupGetBits( update_event_handle) & ( UPDATE_GET_VERSION_REQUEST | UPDATE_REQUEST ) )  {
+        else if ( xEventGroupGetBits( update_event_handle) & ( UPDATE_GET_VERSION_REQUEST | UPDATE_REQUEST ) )  {       
+            log_i("Already updating...");
             return;
         }
         else {
@@ -245,7 +264,7 @@ static void update_event_handler(lv_obj_t * obj, lv_event_t event) {
                             "update Task",
                             10000,
                             NULL,
-                            0,
+                            2,
                             &_update_Task );
         }
     }
@@ -253,7 +272,10 @@ static void update_event_handler(lv_obj_t * obj, lv_event_t event) {
 
 void update_check_version( void ) {
     if ( xEventGroupGetBits( update_event_handle ) & ( UPDATE_GET_VERSION_REQUEST | UPDATE_REQUEST ) ) {
+
+        log_i("Not possible create another task");
         return;
+        
     }
     else {
         xEventGroupSetBits( update_event_handle, UPDATE_GET_VERSION_REQUEST );
@@ -266,17 +288,39 @@ void update_check_version( void ) {
     }
 }
 
-void update_Task( void * pvParameters ) {
-    log_i("start update task, heap: %d", ESP.getFreeHeap() );
 
+
+void update_Task( void * pvParameters ) {
+    log_i("Start update task, heap: %d", ESP.getFreeHeap() );
+    log_i("Disparou task ");
+    
+    
     if ( xEventGroupGetBits( update_event_handle) & UPDATE_GET_VERSION_REQUEST ) {
+
         int64_t firmware_version = update_check_new_version( update_setup_get_url() );
         if ( firmware_version > atol( __FIRMWARE__ ) && firmware_version > 0 ) {
             char version_msg[48] = "";
             snprintf( version_msg, sizeof( version_msg ), "new version: %lld", firmware_version );
             lv_label_set_text( update_status_label, (const char*)version_msg );
             lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
-            setup_set_indicator( update_setup_icon, ICON_INDICATOR_1 );
+            setup_set_indicator( update_setup_icon, ICON_INDICATOR_1 );    
+           //Adicionado para realizar o Auto Firmware Update 
+
+            #ifdef          AUTO_UPDATE_AND_RESTART
+                        
+                       xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
+                       xEventGroupSetBits( update_event_handle, UPDATE_REQUEST );
+                       xTaskCreate(    update_Task,
+                                       "Update Task_2",
+                                       10000,
+                                       NULL,
+                                       2,
+                                       &_update_Task );
+                    
+            #endif     
+        
+        
+        
         }
         else if ( firmware_version == atol( __FIRMWARE__ ) ) {
             lv_label_set_text( update_status_label, "yeah! up to date ..." );
@@ -291,15 +335,20 @@ void update_Task( void * pvParameters ) {
         lv_obj_invalidate( lv_scr_act() );
     }
     if ( ( xEventGroupGetBits( update_event_handle) & UPDATE_REQUEST ) && ( update_get_url() != NULL ) ) {
-        if( WiFi.status() == WL_CONNECTED ) {
+        
+         log_i("%s", update_get_url());
 
-            Serial.print("No Wifi !! \n");
+        if( WiFi.status() == WL_CONNECTED ) {
 
             uint32_t display_timeout = display_get_timeout();
             display_set_timeout( DISPLAY_MAX_TIMEOUT );
 
             lv_label_set_text( update_status_label, "start update ..." );
             lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
+ 
+            powermgm_set_event( POWERMGM_WAKEUP_REQUEST );
+
+
 
             if ( http_ota_start( update_get_url(), update_get_md5() ) ) {
                 reset = true;
@@ -307,7 +356,23 @@ void update_Task( void * pvParameters ) {
                 lv_label_set_text( update_status_label, "update ok, turn off and on!" );
                 lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
                 lv_label_set_text( update_btn_label, "restart");
+
+#ifdef          AUTO_UPDATE_AND_RESTART
+                //Adicionado para realizar o Auto Reset 
+                delay(500);
+                TTGOClass *ttgo = TTGOClass::getWatch();
+                log_i("System reboot by user");
+                motor_vibe(20);
+                delay(20);
+                display_standby();
+                ttgo->stopLvglTick();
+                SPIFFS.end();
+                log_i("SPIFFS unmounted!");
+                delay(500);
+                ESP.restart();    
+#endif
             }
+
             progress = 0;
             lv_bar_set_value( update_progressbar, 0 , LV_ANIM_ON );            
             display_set_timeout( display_timeout );
@@ -315,12 +380,21 @@ void update_Task( void * pvParameters ) {
         }
         else {
             lv_label_set_text( update_status_label, "turn wifi on!" );
-            lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );  
+            lv_obj_align( update_status_label, update_btn, LV_ALIGN_OUT_BOTTOM_MID, 0, 5 );
+
         }
+
+         xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
     }
-    xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
+   // xEventGroupClearBits( update_event_handle, UPDATE_REQUEST | UPDATE_GET_VERSION_REQUEST );
     lv_disp_trig_activity(NULL);
     lv_obj_invalidate( lv_scr_act() );
     log_i("finish update task, heap: %d", ESP.getFreeHeap() );
     vTaskDelete( NULL );
 }
+
+
+
+
+
+

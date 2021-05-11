@@ -29,6 +29,8 @@
 
 #include "gui/mainbar/app_tile/app_tile.h"
 #include "gui/mainbar/main_tile/main_tile.h"
+#include "gui/mainbar/setup_tile/update/update.h"
+
 #include "gui/mainbar/mainbar.h"
 #include "gui/statusbar.h"
 #include "hardware/motor.h"
@@ -94,18 +96,19 @@ uint8_t atualiza_ticket(Ticket_t *atualiza);
 void sendCanceled(lv_obj_t *obj, lv_event_t event);
 void show_watch_status(lv_obj_t *obj, lv_event_t event);
 void Get_TeamMembers(void * pvParameters);
-
+void show_team_status(lv_obj_t *obj, lv_event_t event);
 //------Prototipos--WIFI------
 
 bool jit_wifictl_event_cb( EventBits_t event, void *arg );
+
 
 
 //------Prototipos--MQTT----
 
 void MQTT_callback(char* topic, byte* message, unsigned int length);
 bool jitsupport_mqttctrl_event_cb(EventBits_t event, void *arg );
-static void pub_mqtt(lv_obj_t *obj, lv_event_t event);
-void mqtt_reconnect();
+
+
 
 
 //---------------MQTT---------------------
@@ -118,21 +121,21 @@ bool once_flag=false;
 uint8_t idTeam;
 String NomeTopicoReceber="";
 String NomeTopicoAtualizar="";
+String NomeTopicoArea="";
 char nometopico[15];
 char atualizartopico[15];
+char areatopico[30];
 char payload[200];
 char nomepeq[10]= "a";
 char nomefull[100];
 
 EventGroupHandle_t xMqttEvent=NULL;
 portMUX_TYPE DRAM_ATTR mqttMux = portMUX_INITIALIZER_UNLOCKED;
-TaskHandle_t _mqttCheck_Task, _Reconnect_Task,_Get_User_Task,_Get_TeamMembers_Task=NULL;
+TaskHandle_t _Get_User_Task,_Get_TeamMembers_Task=NULL;
 callback_t *mqtt_callback = NULL;
 
 void Get_User(void * pvParameters);
 void Get_User(void * pvParameters);
-void Check_MQTT_Task( void * pvParameters );
-void Mqtt_Reconnect( void * pvParameters );
 bool mqtt_send_event_cb( EventBits_t event, void *arg);
 
 
@@ -178,6 +181,9 @@ static lv_style_t stl_transp;
 static lv_style_t stl_btnStatus;
 
 static lv_obj_t * bg_card;
+static lv_obj_t * team_card;
+static lv_obj_t * status_card;
+static lv_obj_t * lbl_teamMembers;
 static lv_obj_t * lbl_workstation;
 static lv_obj_t * lbl_risk;
 static lv_obj_t * lbl_calltime;
@@ -202,6 +208,7 @@ static lv_obj_t * lbl_count_separator;
 static lv_obj_t * lbl_IP;
 static lv_obj_t * lbl_UserName;
 static lv_obj_t * lbl_MQTT;
+static lv_obj_t * lbl_Area;
 
 static lv_obj_t * btn_back;
 static lv_obj_t * btn_next;
@@ -234,7 +241,8 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_add_style( jitsupport_cont, LV_OBJ_PART_MAIN, &stl_view );
     lv_obj_align( jitsupport_cont, jitsupport_app_main_tile, LV_ALIGN_CENTER, 0, 0 );
 
-  
+
+
     //***************************
     // TOP HORIZONTAL LINE
 
@@ -288,31 +296,58 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_style_set_border_width(&stl_transp,LV_BTN_STATE_RELEASED,0);
     lv_style_set_border_width(&stl_transp,_LV_BTN_STATE_LAST,0);
     
-    // LABEL NO CARD
-    lv_obj_t * lbl_nocard;
-    lbl_nocard = lv_label_create(jitsupport_cont, NULL);
-    lv_label_set_text(lbl_nocard, "");
-    lv_obj_align(lbl_nocard, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 60);
 
-    lbl_IP = lv_label_create(jitsupport_cont, NULL);
+  //-----Status Card------ 
+    status_card = lv_obj_create(jitsupport_cont, NULL);
+    lv_obj_set_pos(status_card, 0, 37);
+    lv_obj_set_width(status_card,240);
+    lv_obj_set_height(status_card,167);
+    lv_obj_add_style(status_card, LV_OBJ_PART_MAIN, &stl_view);
+
+    // LABEL NO CARD
+ 
+    lbl_IP = lv_label_create(status_card, NULL);
     lv_label_set_text(lbl_IP, "0.0.0.0");
-    lv_obj_align(lbl_IP, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 80);
+    lv_obj_align(lbl_IP, status_card, LV_ALIGN_IN_TOP_LEFT, 5, 80);
 
     
-    lbl_UserName = lv_label_create(jitsupport_cont, NULL);
-    lv_label_set_text(lbl_UserName, "-0");
-    lv_obj_align(lbl_UserName, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 100);
+    lbl_UserName = lv_label_create(status_card, NULL);
+    lv_label_set_text(lbl_UserName, "No Name Found");
+    lv_obj_align(lbl_UserName, status_card, LV_ALIGN_IN_TOP_LEFT, 5, 100);
 
-    lbl_MQTT = lv_label_create(jitsupport_cont, NULL);
+    lbl_Area = lv_label_create(status_card, NULL);
+    lv_label_set_text(lbl_Area, "No Area Found");
+    lv_obj_align(lbl_Area, status_card, LV_ALIGN_IN_TOP_LEFT, 5, 120);
+    
+    
+    lbl_MQTT = lv_label_create(status_card, NULL);
     lv_label_set_text(lbl_MQTT, "MQTT NOT CONNECTED !");
-    lv_obj_align(lbl_MQTT, jitsupport_cont, LV_ALIGN_IN_TOP_LEFT, 5, 120);
+    lv_obj_align(lbl_MQTT, status_card, LV_ALIGN_IN_TOP_LEFT, 5, 140);
  
+
+
+  //-----Team Ground Card------ 
+    team_card = lv_obj_create(jitsupport_cont, NULL);
+    lv_obj_set_pos(team_card, 0, 37);
+    lv_obj_set_width(team_card,240);
+    lv_obj_set_height(team_card,167);
+    lv_obj_add_style(team_card, LV_OBJ_PART_MAIN, &stl_view);
+
+
+  // -------Team Label---------
+
+    lbl_teamMembers = lv_label_create(team_card, NULL);
+    lv_label_set_text(lbl_teamMembers, "");
+    lv_obj_align(lbl_teamMembers, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 10);
+
+
+    //-----Back Ground Card------ 
     bg_card = lv_obj_create(jitsupport_cont, NULL);
     lv_obj_set_pos(bg_card, 0, 37);
     lv_obj_set_width(bg_card,240);
     lv_obj_set_height(bg_card,167);
     lv_obj_add_style(bg_card, LV_OBJ_PART_MAIN, &stl_bg_card);
-    
+
     // WORKSTATION LABEL
      
     lbl_workstation = lv_label_create(bg_card, NULL);
@@ -486,14 +521,18 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
     lv_obj_add_style(btn_team, LV_OBJ_PART_MAIN, &stl_transp);
     lbl_btn_team = lv_label_create(btn_team, NULL);
     lv_label_set_text(lbl_btn_team, LV_SYMBOL_EYE_OPEN);
-    //lv_obj_set_event_cb(btn_team, show_team_status);
+    lv_obj_set_event_cb(btn_team, show_team_status);
 
-    
-#ifdef NEW_MQTT_IMPLEMENTATION
+
+    // INIT CARD
+
+    lv_obj_set_hidden(status_card,true);
+    lv_obj_set_hidden(team_card,true);
+
      
      mqttctrl_setup();
 
-#else
+
 
     client.setServer(mqtt_server, MQTT_PORT);
     client.setKeepAlive(MQTT_KEEPALIVE_SECONDS);
@@ -501,25 +540,6 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
 
     xMqttEvent=xEventGroupCreate(); 
    
-   //---- Task para Monitoração da Conexão MQTT  
-     xTaskCreatePinnedToCore( Check_MQTT_Task,                                  /* Function to implement the task */
-                             "Mqtt CheckTask",                                  /* Name of the task */
-                              3000,                                             /* Stack size in words */
-                              NULL,                                             /* Task input parameter */
-                              1,                                                /* Priority of the task */
-                             &_mqttCheck_Task,                                  /* Task handle. */
-                              0 );
-     vTaskSuspend(_mqttCheck_Task);
-
-   //---- Task para Reestabelecimento da Conexão MQTT
-     xTaskCreatePinnedToCore( Mqtt_Reconnect,                               /* Function to implement the task */
-                             "Mqtt Reconnect",                              /* Name of the task */
-                              3000,                                        /* Stack size in words */
-                            NULL,                                         /* Task input parameter */
-                              1,                                            /* Priority of the task */
-                              &_Reconnect_Task,                             /* Task handle. */
-                              0 );
-#endif
   //---- Task para GET POST USER
      xTaskCreatePinnedToCore( Get_User,                                 /* Function to implement the task */
                              "Get User",                                /* Name of the task */
@@ -529,21 +549,11 @@ void jitsupport_app_main_setup( uint32_t tile_num ) {
                               &_Get_User_Task,                          /* Task handle. */
                               0 );
   
-  //---- Task para GET POST USER
-   //  xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
-    //                         "Get User",                              /* Name of the task */
-    //                         5000,                                   /* Stack size in words */
-     //                         NULL,                                   /* Task input parameter */
-     //                         1,                                      /* Priority of the task */
-     //                         &_Get_TeamMembers_Task,                 /* Task handle. */
-     //                         0 );
-   //vTaskSuspend(_Get_TeamMembers_Task);
 
    mqqtctrl_register_cb(MQTT_DISCONNECTED_FLAG | MQTT_CONNECTED_FLAG, jitsupport_mqttctrl_event_cb,  "jitsupport Mqtt CB " );
    powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jitsupport_powermgm_loop_cb, "jitsupport app loop" );
    wifictl_register_cb( WIFICTL_CONNECT | WIFICTL_DISCONNECT | WIFICTL_OFF | WIFICTL_ON | WIFICTL_SCAN | WIFICTL_WPS_SUCCESS | WIFICTL_WPS_FAILED | WIFICTL_CONNECT_IP, jit_wifictl_event_cb, "JIT Wifi Event" );
 }
-
 
 
 
@@ -580,33 +590,54 @@ void Get_TeamMembers(void * pvParameters)
                   log_i("deserializeJson() failed: ");
                 }
                 else{
-                    uint8_t num=0;
-                    StaticJsonDocument<256> userObj;
+                      uint8_t num=0;
+                      StaticJsonDocument<256> userObj;
 
-                    for (JsonObject elem : doc3.as<JsonArray>()) {
+                      for (JsonObject elem : doc3.as<JsonArray>()) {
 
-                      const char* user = elem["user"];                
-                      deserializeJson(userObj, user);
-                      auto text = userObj[0]["text"].as<const char*>();    
-                      log_i("oiiii %s",text);
-                      ////char *UserTrim = strtok((char *)text," "); 
-                      strcpy(Team_Members[num].Member_Name,text);
-                      Team_Members[num].state=FULL;
-                                      
-                      log_i("Membro %d: %s", num, Team_Members[num].Member_Name);
-                      num++; 
-                    }
+                        const char* user = elem["user"];
+                        deserializeJson(userObj, user);
+                        auto text = userObj[0]["text"].as<const char*>(); 
+                        char *UserTrim = strtok((char *)text," ");
+                        strtok(NULL, " "); 
+                        strcpy(Team_Members[num].Member_Name,UserTrim);
+                        Team_Members[num].state=FULL;
+                                        
+                        log_i("Membro %d: %s", num, Team_Members[num].Member_Name);
+                        num++; 
+                    
+                      }
+                      
+                      //-------------- INSERE TEAM MEMBER -----------------------
+                      
+                      if(strcmp(Team_Members[0].Member_Name," ")==0)
+                      {
+                        // Rolou algum problema Pelo Menos uma pessoa é obrigatório ter no time 
+                        log_i("Task Team Member EMPTY !");
 
-                     if(strcmp(Team_Members[0].Member_Name," ")==0)
-                     {
-                       // Rolou algum problema Pelo Menos uma pessoa é obrigatório ter no time 
-                       log_i("Task Team Member EMPTY !");
+                      }
+                      else{
+                        
+                          //Melhorar implementação 
 
-                     }
-                     else{
-                       log_i("Task Team Member Deleted !");
-                         vTaskDelete(NULL);   
-                     }
+                          lv_obj_t * lbl_Teamstatus[num-1];
+                          lv_obj_t * lbl_team;
+
+                          lbl_team = lv_label_create(team_card, NULL);
+                          lv_label_set_text(lbl_team, "TEAM MEMBERS: ");
+                          lv_obj_align(lbl_team, NULL, LV_ALIGN_IN_TOP_LEFT, 10, 5);
+
+
+                          for( int a=0 ; a < num;  a++)
+                          {
+                                lbl_Teamstatus[a] = lv_label_create(team_card, NULL);
+                                lv_label_set_text(lbl_Teamstatus[a], Team_Members[a].Member_Name);
+                                lv_obj_align(lbl_Teamstatus[a], NULL, LV_ALIGN_IN_TOP_LEFT, 10, 30 + 13*a);
+                          }
+                          
+                          log_i("Task Team Member Deleted !");
+                          vTaskDelete(NULL);   
+                        }
 
                 }
 
@@ -617,9 +648,7 @@ void Get_TeamMembers(void * pvParameters)
 
     vTaskDelay(2000/ portTICK_PERIOD_MS );
   }
-
 }
-
 
 void Get_User(void * pvParameters)
 {
@@ -633,28 +662,20 @@ void Get_User(void * pvParameters)
             else
             {             
 
-#ifdef NEW_MQTT_IMPLEMENTATION
                 MQTT2_set_client(ip_address);
-                MQTT2_set_subscribe_topics(nometopico,atualizartopico);
+                MQTT2_set_subscribe_topics(nometopico,atualizartopico,areatopico);
+                
                 log_i("setando evento de conexão mqtt");
                 vTaskDelay(1000/ portTICK_PERIOD_MS );
                 mqqtctrl_set_event(MQTT_START_CONNECTION);
-                //xTaskNotifyGive(_Get_TeamMembers_Task);
-                //vTaskResume(_Get_TeamMembers_Task);
 
-                  xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
+                xTaskCreatePinnedToCore( Get_TeamMembers,                        /* Function to implement the task */
                                               "Get User",                              /* Name of the task */
                                               5000,                                   /* Stack size in words */
                                                 NULL,                                   /* Task input parameter */
                                                 0,                                      /* Priority of the task */
                                                 &_Get_TeamMembers_Task,                 /* Task handle. */
-                                                0 );
-
-          
-#else
-                log_i("User Found... Connecting MQTT... Deleting Task...");
-                 vTaskResume(_mqttCheck_Task);
-#endif
+                                                0 );   
                 vTaskDelete(NULL);  
             }            
           }
@@ -714,10 +735,6 @@ bool jitsupport_powermgm_loop_cb( EventBits_t event, void *arg ) {
             break;
         }
 
-#ifndef NEW_MQTT_IMPLEMENTATION 
-  client.loop();
-#endif
-
 return( true );
 }
 
@@ -749,25 +766,6 @@ return( true );
 
 
 
-
-bool mqtt_send_event_cb( EventBits_t event, void *arg ) {
-    return( callback_send( mqtt_callback, event, arg ) );
-}
-
-
-void mqtt_set_event( EventBits_t bits ) {
-    portENTER_CRITICAL(&mqttMux);
-    xEventGroupSetBits( xMqttEvent, bits );
-    portEXIT_CRITICAL(&mqttMux);
-}
-
-void mqtt_clear_event( EventBits_t bits ) {
-    portENTER_CRITICAL(&mqttMux);
-    xEventGroupClearBits( xMqttEvent, bits );
-    portEXIT_CRITICAL(&mqttMux);
-}
-
-
 void MQTT_callback(char* topic, byte* message, unsigned int length) {
   
   log_i("Message arrived on topic: ");
@@ -785,6 +783,14 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
       // OK VALID JSON ! 
      log_i("Aqui chegou");
      log_i("%s",NomeTopicoReceber);
+      
+      
+      //**************************************************
+      //
+      //     TOPICO RECEBER
+      //
+      //***************************************************
+
       if (String(topic) == NomeTopicoReceber) {
             
 
@@ -812,7 +818,13 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
               toggle_Cards_On();
             }
       }
-
+      
+      //**************************************************
+      //
+      //     TOPICO  ATUALIZAR
+      //
+      //***************************************************
+      
       else if(String(topic) == NomeTopicoAtualizar){
       
           Ticket_t atualiza;    
@@ -838,20 +850,52 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
               {
                 printCard3(index,VIBRATION_INTENSE);               
                 if(strcmp(atualiza.status,"OnGoing")==0){    
-                
-                           
+                                      
                 }
                 
                 if(strcmp(atualiza.status,"Done")==0){
 
                       //----OK TICKET EXISTE------------- 
                       log_i("Removing Ticket....");
-                      removefromArray(btn2,LV_EVENT_CLICKED);      
+                      removefromArray(btn2,LV_EVENT_CLICKED);
+
                 }
               }
 
           }
-        }                    
+        }
+      
+      //**************************************************
+      //
+      //     TOPICO  AREA
+      //
+      //***************************************************
+        
+        else if(String(topic) == NomeTopicoArea){
+         
+          log_i("Teste de Reset");
+          char comando[30];
+          
+          strcpy(comando,result["comando"]);
+          log_i("%s",comando);
+                    
+          if(strcmp(comando,"reset")==0){  
+            
+            log_i("Reset Command Received");
+            cmd_reset();
+
+          }
+
+          if(strcmp(comando,"update")==0){  
+            
+            log_i("Reset Update Received");
+            update_check_version(); 
+            //cmd_reset();
+            
+          }
+
+        }
+
     }
     else
     {
@@ -861,141 +905,6 @@ void MQTT_callback(char* topic, byte* message, unsigned int length) {
  
 }
 
-
-
-/* Possible values for client.state()
- MQTT_CONNECTION_TIMEOUT     -4
- MQTT_CONNECTION_LOST        -3
- MQTT_CONNECT_FAILED         -2
- MQTT_DISCONNECTED           -1
- MQTT_CONNECTED               0
- MQTT_CONNECT_BAD_PROTOCOL    1
- MQTT_CONNECT_BAD_CLIENT_ID   2
- MQTT_CONNECT_UNAVAILABLE     3
- MQTT_CONNECT_BAD_CREDENTIALS 4
- MQTT_CONNECT_UNAUTHORIZED    5
-*/
-
-void Check_MQTT_Task(void * pvParameters ){
-  
-    while (1) {
-
-      switch(client.state()){ 
-        
-        case(MQTT_CONNECTED):
-
-             mqtt_set_event( MQTT_CONNECTED_FLAG );
-             lv_label_set_text(lbl_MQTT, "MQTT CONNECTED !!");
-             //mqtt_send_event_cb(MQTT_CONNECTED_FLAG, (void *)"MQTT connected");
-            if((once_flag==false)&&(pegueiUser=true))
-            {
-               
-               log_i("Se inscrevendo no tópico");
-               log_i("%s", nometopico);
-               log_i("%s", atualizartopico);
-              
-              // Proteção 
-              if(strcmp(nometopico,"")==0)break;
-              if(strcmp(atualizartopico,"")==0)break;
-              
-              client.subscribe(nometopico,1);
-              client.subscribe(atualizartopico,1);
-
-              once_flag=true;
-            }
-
-        break;
-
-        case(MQTT_CONNECT_FAILED):
-
-           log_i("MQTT_CONNECT_FAILED...");
-           lv_label_set_text(lbl_MQTT, "MQTT_CONNECT_FAILED !!");
-           xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
-          // mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);   
-
-        break;
-        case(MQTT_DISCONNECTED):
-            
-              
-            log_i("MQTT_DISCONNECTED");
-            lv_label_set_text(lbl_MQTT, "MQTT_DISCONNECTED !!");           
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
-           // mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);   
-
-        break;
-
-        case(MQTT_CONNECTION_TIMEOUT):
-
-               
-            log_i("MQTT_CONNECTION_TIMEOUT");
-            lv_label_set_text(lbl_MQTT, "MQTT_CONNECTION_TIMEOUT !!");         
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
-           // mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);  
-
-        break;
-
-        case(MQTT_CONNECTION_LOST):
-     
-             
-            log_i("MQTT lost connection... "); 
-            lv_label_set_text(lbl_MQTT, "MQTT lost connection..."); 
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
-            //mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);          
-        break;     
-
-        case(MQTT_CONNECT_BAD_CLIENT_ID):   
-            log_i("MQTT_CONNECT_BAD_CLIENT_ID");
-            lv_label_set_text(lbl_MQTT, "MQTT_CONNECT_BAD_CLIENT_ID!!");  
-            
-            xEventGroupSetBits(xMqttEvent,MQTT_DISCONNECTED_FLAG);
-            //mqtt_send_event_cb(MQTT_DISCONNECTED_FLAG);        
-        break; 
-
-        default:
-         log_i("MQTT NOT TREATED STATE:");  
-         log_i("%d",client.state());   
-      }
-        vTaskDelay(CHECK_MQTT_CONNECTION_MILLI_SECONDS/ portTICK_PERIOD_MS );
-    } 
-  }
-
-
-static void pub_mqtt(lv_obj_t *obj, lv_event_t event)
-{
-    if (event == LV_EVENT_CLICKED) {
-        log_i("Mqtt publish \n");
-      client.publish("esp32/output", "***** sending test message******");
-
-    } 
-    
-}
-
-
-
-void Mqtt_Reconnect(void * pvParameters)
-{  
-    EventBits_t xBits;
-    while(1)
-    {     
-        
-        xBits=xEventGroupWaitBits(xMqttEvent,MQTT_DISCONNECTED_FLAG,pdTRUE,pdTRUE,portMAX_DELAY); 
-            
-            if(wifi_connected==1)
-            {  
-              
-                if(!pegueiUser)getWatchUser();
-                log_i("MQTT reconnection...");                     
-                log_i("%s",ip_address);
-
-                if (client.connect(ip_address, MQTT_USER, MQTT_PSSWD,"status_team/16", 1, 1,"oi", MQTT_CLEAN_SESSION))
-                {                             
-                  log_i("MQQT Connected");    
-                }
-                else  log_i("Failed !");     
-            }
-        
-        }
-}
 
 
 uint8_t get_number_tickets()
@@ -1194,16 +1103,31 @@ void getWatchUser(){
                 NomeTopicoAtualizar.toCharArray(atualizartopico,15);
 
                 auto user = result["user"].as<const char*>();
+                auto area = result["area"].as<const char*>();
                 log_i("%s",user);
+
                 StaticJsonDocument<256> userObj;
+                StaticJsonDocument<256> areaObj;
                 deserializeJson(userObj, user);
+                deserializeJson(areaObj, area);
+
                 auto id = userObj[0]["id"].as<int>();
                 auto text = userObj[0]["text"].as<const char*>();
+                auto my_local = areaObj[0]["text"].as<const char*>();
+
                 strcpy(nomefull,text);
+
                 log_i("%d",id);
                 log_i("%s",text);
+                log_i("%s",my_local);
+
                 lv_label_set_text(lbl_UserName,text);
-                pegueiUser = true;              
+                lv_label_set_text(lbl_Area, my_local);
+
+                NomeTopicoArea = "general/" + String(my_local);  
+                NomeTopicoArea.toCharArray(areatopico,30);
+                pegueiUser = true;
+
                 
               } else {
                   log_i("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
@@ -1214,7 +1138,6 @@ void getWatchUser(){
 
           }
 }
-
 
 
 void printCard3(uint8_t index, uint8_t vibration_intensity){
@@ -1371,11 +1294,9 @@ void sendCanceled(lv_obj_t *obj, lv_event_t event){
       log_i("Request que vou fazer:");
       log_i("%s",requestBody);
       requestBody.toCharArray(payload,200);
-#ifdef NEW_MQTT_IMPLEMENTATION
+
       MQTT2_publish(atualizartopico, payload);
-#else
-      client.publish(atualizartopico, payload);
-#endif
+
   }
 
 }
@@ -1403,11 +1324,8 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
       log_i("%s",requestBody);
       requestBody.toCharArray(payload,200);
 
-#ifdef NEW_MQTT_IMPLEMENTATION
       MQTT2_publish(atualizartopico, payload);
-#else
-      client.publish(atualizartopico, payload);
-#endif
+
 
   }
 
@@ -1417,21 +1335,57 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
 
 void show_watch_status(lv_obj_t *obj, lv_event_t event){
 
-  static bool aux=false; 
 
 if (event == LV_EVENT_CLICKED) {
 
-        if(get_number_tickets()>0)
-        {
-          lv_obj_set_hidden(bg_card,!lv_obj_get_hidden(bg_card)); 
+        
+          if(lv_obj_get_hidden(status_card)==true)
+          {
+              lv_obj_set_hidden(status_card,false);
+              lv_obj_set_hidden(bg_card,true);
+              lv_obj_set_hidden(team_card,true); 
 
-        }  
 
+          }
+          else
+          {
+              
+              lv_obj_set_hidden(status_card,true);
+              lv_obj_set_hidden(team_card,true); 
+              if(get_number_tickets()>0)lv_obj_set_hidden(bg_card,false);
+
+
+          }
+}
+}
+
+
+void show_team_status(lv_obj_t *obj, lv_event_t event){
+
+if (event == LV_EVENT_CLICKED) {
+
+          
+          if(lv_obj_get_hidden(team_card)==true)
+          {
+              //Ta escondido Team viewer           
+              lv_obj_set_hidden(team_card,false);
+              lv_obj_set_hidden(bg_card,true);
+              lv_obj_set_hidden(status_card,true); 
+
+          }
+          else
+          {
+              
+              lv_obj_set_hidden(team_card,true);
+              lv_obj_set_hidden(status_card,true);
+              if(get_number_tickets()>0)lv_obj_set_hidden(bg_card,false);  
+
+          }
+   
+      
 }
 
 }
-
-
 
 
 

@@ -12,11 +12,7 @@
     #define EMPTY                           1
     #define FULL                            0
     
-
-    //#define OLD_APP_JIT   
     //#define NO_HTTP_RESPONSE
-    #define NEW_MQTT_IMPLEMENTATION
-
 
 
     #define VIBRATION_DISABLE               0
@@ -30,7 +26,7 @@
     
     void MQTT_callback(char* topic, byte* message, unsigned int length);
     void MQTT2_publish(char *atualizartopico, char *payload);
-    
+    void cmd_reset();
     /*
     * @brief registers a callback function which is called on a corresponding event
      * 

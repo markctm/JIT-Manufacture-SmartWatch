@@ -42,15 +42,14 @@
     /*
     * Firmware version string
     */
-    #define __FIRMWARE__            "TT_WATCH_JABIL"
+    #define __FIRMWARE__            "2021050001"
 
-
-
+    
 //-----------Global---------
 
 
 extern volatile int wifi_connected;
-
+extern int boot_finish;
 
 //------MQTT---CONNECTION------
 //#define MQTT_BROKER_MOSQUITTO                        
@@ -104,6 +103,13 @@ extern volatile int wifi_connected;
 
 //#define WIFI_SSID            "2.4_netvirtua283bl2ap1002"
 //#define WIFI_PASSWORD        "3348981600"
+
+
+
+#define FIRMWARE_UPDATE_URL            "http://172.24.73.44:3015/testeconfig"
+#define AUTO_UPDATE_AND_RESTART                     
+
+
 
 
 #define JABIL_SILENCE_WAKEUP_INTERVAL                       5
