@@ -38,8 +38,11 @@
 #include "display.h"
 #include "rtcctl.h"
 #include "sound.h"
+#include "http_ota.h"
 
 #include "gui/mainbar/mainbar.h"
+
+
 
 EventGroupHandle_t powermgm_status = NULL;
 portMUX_TYPE DRAM_ATTR powermgmMux = portMUX_INITIALIZER_UNLOCKED;
@@ -71,8 +74,8 @@ void powermgm_setup( void ) {
     //blectl_read_config();
     log_i("Inicialização Sound Read...");
     sound_read_config();
-    
     powermgm_set_event( POWERMGM_WAKEUP );
+
 }
 
 void powermgm_loop( void ) {
@@ -132,8 +135,8 @@ void powermgm_loop( void ) {
         log_i("uptime: %d", millis() / 1000 );
 
     }        
-    else if( powermgm_get_event( POWERMGM_STANDBY_REQUEST ) ) {
-        
+    else if( powermgm_get_event( POWERMGM_STANDBY_REQUEST ) && !http_ota_get_event(HTTP_OTA_PROGRESS)) {
+ 
         //Save info to avoid buzz when standby after silent wake
         bool noBuzz = powermgm_get_event( POWERMGM_SILENCE_WAKEUP | POWERMGM_SILENCE_WAKEUP_REQUEST );
         
@@ -179,6 +182,7 @@ void powermgm_loop( void ) {
     else if ( powermgm_get_event( POWERMGM_SILENCE_WAKEUP ) ) {
         powermgm_send_loop_event_cb( POWERMGM_SILENCE_WAKEUP );
     }
+
 }
 
 void powermgm_shutdown( void ) {

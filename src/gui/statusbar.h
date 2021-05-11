@@ -44,6 +44,8 @@
         STATUSBAR_BELL,
         STATUSBAR_WARNING,
         STATUSBAR_ALARM,
+        STATUSBAR_MQTT,
+        STATUSBAR_UPDATE,
         STATUSBAR_NUM
     } statusbar_icon_t;
     

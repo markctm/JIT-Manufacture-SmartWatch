@@ -42,19 +42,19 @@
     /*
     * Firmware version string
     */
-    #define __FIRMWARE__            "TT_WATCH_JABIL"
+    #define __FIRMWARE__            "2021050001"
 
-
-
+    
 //-----------Global---------
 
 
-extern int wifi_connected;
-
+extern volatile int wifi_connected;
+extern int boot_finish;
 
 //------MQTT---CONNECTION------
-#define MQTT_BROKER_MOSQUITTO                        
-// #define MQTT_BROKER_CLOUD                                                          
+//#define MQTT_BROKER_MOSQUITTO                        
+//#define MQTT_BROKER_CLOUD    
+#define MQTT_BROKER_JABIL
 
 #ifdef  MQTT_BROKER_CLOUD                                
 
@@ -63,6 +63,7 @@ extern int wifi_connected;
 #define MQTT_PSSWD                                  "KhwBxhvkWZFq"
 #define MQTT_PORT                                   10304
 #define MQTT_KEEPALIVE_SECONDS                      120
+#define MQTT_CLEAN_SESSION                          0  
 
 #endif
 
@@ -76,7 +77,18 @@ extern int wifi_connected;
 #define MQTT_CLEAN_SESSION                          0    
 #endif
 
-#define CHECK_MQTT_CONNECTION_MILLI_SECONDS          2000
+#ifdef  MQTT_BROKER_JABIL                                
+
+#define MQTT_SERVER                                 "brbelm0mat81.corp.jabil.org"
+#define MQTT_USER                                   NULL
+#define MQTT_PSSWD                                  NULL
+#define MQTT_PORT                                   1883
+#define MQTT_KEEPALIVE_SECONDS                      120
+#define MQTT_CLEAN_SESSION                          0    
+#endif
+
+
+#define CHECK_MQTT_CONNECTION_MILLI_SECONDS          5000
 #define WIFI_TENTATIVES_TO_RECONNECT                 20                         //before go to sleep 
 
 //-----WIFI--AUTHENTICATION---
@@ -93,7 +105,14 @@ extern int wifi_connected;
 //#define WIFI_PASSWORD        "3348981600"
 
 
-#define JABIL_SILENCE_WAKEUP_INTERVAL 3
+
+#define FIRMWARE_UPDATE_URL            "http://172.24.73.44:3015/testeconfig"
+#define AUTO_UPDATE_AND_RESTART                     
+
+
+
+
+#define JABIL_SILENCE_WAKEUP_INTERVAL                       5
 
 #ifdef __cplusplus // Allows to include config.h from C code
     #include <LilyGoWatch.h>

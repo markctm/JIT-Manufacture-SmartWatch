@@ -31,8 +31,21 @@
 #include "callback.h"
 #include "http_ota.h"
 
+
+EventGroupHandle_t xHttp_Ota_CtrlEvent= xEventGroupCreate();
 callback_t *http_ota_callback = NULL;
+portMUX_TYPE DRAM_ATTR http_otactlMux = portMUX_INITIALIZER_UNLOCKED;
+
+
+bool http_ota_get_event( EventBits_t bits ); 
+void http_ota_set_event( EventBits_t bits );
+void http_ota_clear_event( EventBits_t bits);
+
+ 
 bool http_ota_send_event_cb( EventBits_t event, void *arg );
+
+
+
 
 bool http_ota_start( const char* url, const char* md5 ) {
     int downloaded = 0;
@@ -46,10 +59,21 @@ bool http_ota_start( const char* url, const char* md5 ) {
     HTTPClient http;
 
     http.setUserAgent( "ESP32-UPDATE-" __FIRMWARE__ );
-    http.begin( url );
+    bool result = http.begin( url );
+
+    log_i("REsultado http OTA/ URL %d", result); 
+
     int httpCode = http.GET();
 
+    log_i("HTTP OTA ROLANDO");
+
     if ( httpCode > 0 && httpCode == HTTP_CODE_OK ) {
+        
+        
+        
+        //http_ota_clear_event( HTTP_OTA_START|HTTP_OTA_FINISH|HTTP_OTA_ERROR|HTTP_OTA_PROGRESS); 
+        //http_ota_set_event( HTTP_OTA_START); 
+
         http_ota_send_event_cb( HTTP_OTA_START, (void *)NULL );
 
         len = http.getSize();
@@ -69,6 +93,7 @@ bool http_ota_start( const char* url, const char* md5 ) {
                         written = Update.write( buff, c );
                         if ( written > 0 ) {
                             if( written != c ) {
+                                
                                 http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Flashing chunk not full ... warning!" );
                                 log_w("Flashing chunk not full ... warning!");
                             }
@@ -81,6 +106,7 @@ bool http_ota_start( const char* url, const char* md5 ) {
                                 old_progress = progress;
                             }
                         } else {
+                            ///http_ota_clear_event( HTTP_OTA_START); 
                             http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Flashing ... failed!" );
                             log_e("Flashing ... failed!");
                             ret = false;
@@ -95,12 +121,15 @@ bool http_ota_start( const char* url, const char* md5 ) {
             }
         }
         else {
+           
             http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Flashing init ... failed!" );
             log_e("Flashing init ... failed!");
         }
+
         http_ota_send_event_cb( HTTP_OTA_FINISH, (void*)NULL );
     }
     else {
+    
         http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"[HTTP] GET... failed!" );
         log_e("[HTTP] GET... failed!");
         ret = false;        
@@ -109,14 +138,17 @@ bool http_ota_start( const char* url, const char* md5 ) {
 
     if( downloaded == total && len == 0 ) {
         if( Update.end() ) {
+ 
             http_ota_send_event_cb( HTTP_OTA_FINISH, (void*)"Flashing ... done!" );
             log_i("Flashing ... done!");
         } else {
+
             http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Flashing md5 ... failed!" );
             log_e("Flashing md5 ... failed!");
             ret = false;
         }
     } else {
+     
         http_ota_send_event_cb( HTTP_OTA_ERROR, (void*)"Download firmware ... failed!" );
         log_e("Download firmware ... failed!");
         ret = false;
@@ -136,5 +168,34 @@ bool http_ota_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const
 }
 
 bool http_ota_send_event_cb( EventBits_t event, void *arg ) {
+    
+    http_ota_clear_event( HTTP_OTA_START|HTTP_OTA_FINISH|HTTP_OTA_ERROR|HTTP_OTA_PROGRESS); 
+    http_ota_set_event( event );
+
     return( callback_send_no_log( http_ota_callback, event, arg ) );
+}
+
+
+bool http_ota_get_event( EventBits_t bits ) {
+
+    portENTER_CRITICAL(&http_otactlMux);
+    EventBits_t temp = xEventGroupGetBits( xHttp_Ota_CtrlEvent) & bits;
+    portEXIT_CRITICAL(&http_otactlMux);
+    
+    if ( temp )
+        return( true );
+
+    return( false );
+}
+
+void http_ota_set_event( EventBits_t bits ){
+
+    xEventGroupSetBits( xHttp_Ota_CtrlEvent, bits);
+
+}
+
+void http_ota_clear_event( EventBits_t bits){
+
+    xEventGroupClearBits( xHttp_Ota_CtrlEvent, bits);
+
 }

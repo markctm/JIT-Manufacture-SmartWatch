@@ -28,4 +28,8 @@
      */
     bool http_ota_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
 
+
+    bool http_ota_get_event( EventBits_t bits ); 
+
+
 #endif /* __HTTP_OTA_H */

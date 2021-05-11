@@ -21,8 +21,6 @@
  */
 #include "config.h"
 #include <stdio.h>
-
-#include "config.h"
 #include <Arduino.h>
 #include <time.h>
 #include "gui.h"
@@ -33,7 +31,6 @@
 #include "SD.h"
 
 #include "statusbar.h"
-
 #include "hardware/powermgm.h"
 #include "hardware/wifictl.h"
 #include "hardware/blectl.h"
@@ -42,15 +39,19 @@
 #include "hardware/pmu.h"
 #include "hardware/sound.h"
 #include "hardware/display.h"
+#include "hardware/http_ota.h"
 
 #include "gui/mainbar/mainbar.h"
 #include "gui/mainbar/setup_tile/wlan_settings/wlan_settings.h"
 #include "gui/mainbar/setup_tile/bluetooth_settings/bluetooth_settings.h"
+#include "app/jitsupport/jitsupport_mqtt.h"
+#include "gui/mainbar/setup_tile/update/update.h"
 
 
-#include "app/jitsupport/jitsupport_app_main.h"
 
 
+static bool statusbar_init = false;
+static bool statusbar_refresh_update = false;
 
 
 static lv_obj_t *statusbar = NULL;
@@ -64,6 +65,7 @@ static lv_obj_t *statusbar_brightness_slider = NULL;
 static lv_obj_t *statusbar_sound_icon = NULL;
 static lv_style_t statusbarstyle[ STATUSBAR_STYLE_NUM ];
 
+
 LV_IMG_DECLARE(wifi_64px);
 LV_IMG_DECLARE(bluetooth_64px);
 LV_IMG_DECLARE(foot_16px);
@@ -71,8 +73,10 @@ LV_IMG_DECLARE(alarm_16px);
 LV_IMG_DECLARE(brightness_32px);
 LV_IMG_DECLARE(sound_32px);
 LV_IMG_DECLARE(sound_mute_32px);
+//LV_IMG_DECLARE(info_ok_16px);
 
-lv_status_bar_t statusicon[ STATUSBAR_NUM ] = 
+
+lv_status_bar_t statusicon[STATUSBAR_NUM] = 
 {
     { NULL, NULL, LV_ALIGN_IN_TOP_RIGHT, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_BATTERY_FULL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
@@ -81,7 +85,9 @@ lv_status_bar_t statusicon[ STATUSBAR_NUM ] =
     { NULL, LV_SYMBOL_VOLUME_MAX, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_BELL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
     { NULL, LV_SYMBOL_WARNING, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
-    { NULL, &alarm_16px, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
+    { NULL,  LV_SYMBOL_BELL, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] },
+    { NULL,  LV_SYMBOL_CLOSE, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_RED ]},       // MQTT SYMBOL
+    { NULL,  LV_SYMBOL_REFRESH, LV_ALIGN_OUT_LEFT_MID, &statusbarstyle[ STATUSBAR_STYLE_WHITE ]},     // REFRESH SYMBOL
 };
 
 bool should_save_brightness_config = false;
@@ -102,19 +108,27 @@ bool statusbar_bmactl_event_cb( EventBits_t event, void *arg );
 bool statusbar_pmuctl_event_cb( EventBits_t event, void *arg );
 bool statusbar_displayctl_event_cb( EventBits_t event, void *arg );
 
-bool statusbar_mqtt_event_cb( EventBits_t event, void *arg );
-
-
-
 void statusbar_wifi_set_state( bool state, const char *wifiname );
 void statusbar_wifi_set_ip_state( bool state, const char *ip );
 void statusbar_bluetooth_set_state( bool state );
+
+
+bool statusbar_mqtt_event_cb( EventBits_t event, void *arg );
+bool update_event_cb( EventBits_t event, void *arg );
+
 
 lv_task_t * statusbar_task;
 void statusbar_update_task( lv_task_t * task );
 
 void statusbar_setup( void )
 {
+      
+    if ( statusbar_init ) {
+        log_e("statusbar already init");
+        return;
+    }
+        
+    
     /*Copy a built-in style to initialize the new style*/
     lv_style_init(&statusbarstyle[ STATUSBAR_STYLE_NORMAL ] );
     lv_style_set_radius(&statusbarstyle[ STATUSBAR_STYLE_NORMAL ], LV_OBJ_PART_MAIN, 0);
@@ -180,7 +194,7 @@ void statusbar_setup( void )
     }
 
     static lv_style_t style;
-    lv_style_init(&style);
+    //lv_style_init(&style);
     lv_style_copy( &style, &statusbarstyle[ STATUSBAR_STYLE_GRAY ] );
 
     lv_style_set_image_recolor_opa( &style, LV_BTN_STATE_RELEASED, LV_OPA_100 );
@@ -234,6 +248,7 @@ void statusbar_setup( void )
     lv_obj_add_style( statusbar_stepicon, LV_OBJ_PART_MAIN, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] );
     lv_obj_align( statusbar_stepicon, statusbar, LV_ALIGN_IN_TOP_LEFT, 5, 4 );
 
+
     statusbar_stepcounterlabel = lv_label_create(statusbar, NULL );
     lv_obj_reset_style_list( statusbar_stepcounterlabel, LV_OBJ_PART_MAIN );
     lv_obj_add_style( statusbar_stepcounterlabel, LV_OBJ_PART_MAIN, &statusbarstyle[ STATUSBAR_STYLE_WHITE ] );
@@ -272,15 +287,23 @@ void statusbar_setup( void )
     lv_img_set_src( statusbar_brightness_icon, &brightness_32px );
     lv_obj_align( statusbar_brightness_icon, statusbar_brightness_cont, LV_ALIGN_IN_LEFT_MID, 15, 0 );
 
+
+
+    statusbar_init = true;
+
     statusbar_hide_icon( STATUSBAR_BELL );
     statusbar_hide_icon( STATUSBAR_WARNING );
     statusbar_hide_icon( STATUSBAR_WIFI );
     statusbar_hide_icon( STATUSBAR_BLUETOOTH );
+     statusbar_hide_icon( STATUSBAR_UPDATE );
+    
     if (rtcctl_get_alarm_data()->enabled){
         statusbar_show_icon( STATUSBAR_ALARM );
     } else{
         statusbar_hide_icon( STATUSBAR_ALARM );
     }
+    statusbar_show_icon( STATUSBAR_MQTT );
+
     statusbar_hide_icon( STATUSBAR_VOLUME );
     statusbar_style_icon( STATUSBAR_BLUETOOTH, STATUSBAR_STYLE_GRAY );
 
@@ -291,21 +314,46 @@ void statusbar_setup( void )
     pmu_register_cb( PMUCTL_BATTERY_PERCENT | PMUCTL_CHARGING | PMUCTL_VBUS_PLUG, statusbar_pmuctl_event_cb, "statusbar pmu");
     sound_register_cb( SOUNDCTL_ENABLED | SOUNDCTL_VOLUME, statusbar_soundctl_event_cb, "statusbar sound");
     display_register_cb( DISPLAYCTL_BRIGHTNESS, statusbar_displayctl_event_cb, "statusbar display" );
-
-    mqtt_register_cb( MQTT_CONNECTED_FLAG | MQTT_DISCONNECTED_FLAG, statusbar_mqtt_event_cb, "statusbar mqtt" );
+    
+    
+    mqqtctrl_register_cb( MQTT_CONNECTED_FLAG | MQTT_DISCONNECTED_FLAG, statusbar_mqtt_event_cb, "statusbar mqtt" );
+    http_ota_register_cb(HTTP_OTA_START| HTTP_OTA_FINISH|HTTP_OTA_ERROR|HTTP_OTA_PROGRESS, update_event_cb, "statusbar update" );
 
 
     lv_slider_set_value( statusbar_brightness_slider, display_get_brightness(), LV_ANIM_OFF );
     lv_slider_set_value( statusbar_volume_slider, sound_get_volume_config(), LV_ANIM_OFF );
 
-    statusbar_task = lv_task_create( statusbar_update_task, 500, LV_TASK_PRIO_MID, NULL );
+    statusbar_task = lv_task_create( statusbar_update_task, 250, LV_TASK_PRIO_MID, NULL );
 }
 
 void statusbar_update_task( lv_task_t * task ) {
-    statusbar_refresh();
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+    if ( statusbar_refresh_update ) {
+        statusbar_refresh();
+        statusbar_refresh_update = false;
+    }
+
 }
 
 bool statusbar_soundctl_event_cb( EventBits_t event, void *arg ) {
+
+    
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
+
     switch( event ) {
         case SOUNDCTL_ENABLED:  
             if ( *(bool*)arg ) {
@@ -326,6 +374,16 @@ bool statusbar_soundctl_event_cb( EventBits_t event, void *arg ) {
 }
 
 bool statusbar_displayctl_event_cb( EventBits_t event, void *arg ) {
+    
+    
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
     switch( event ) {
         case DISPLAYCTL_BRIGHTNESS:  
             lv_slider_set_value( statusbar_brightness_slider, display_get_brightness(), LV_ANIM_OFF );
@@ -339,6 +397,17 @@ bool statusbar_pmuctl_event_cb( EventBits_t event, void *arg ) {
     static int32_t percent = 0;
     static bool plug = false;
 
+    
+      /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
+    
+    
     switch( event ) {
         case PMUCTL_BATTERY_PERCENT:    if ( *(int32_t*)arg >= 0 ) {
                                             snprintf( level, sizeof( level ), "%d%%", *(int32_t*)arg );
@@ -388,11 +457,20 @@ bool statusbar_pmuctl_event_cb( EventBits_t event, void *arg ) {
                                         }
                                         break;
     }
-    statusbar_refresh();
+    statusbar_refresh_update = true;
     return( true );
 }
 
 bool statusbar_bmactl_event_cb( EventBits_t event, void *arg ) {
+    
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
     switch( event ) {
         case BMACTL_STEPCOUNTER:    lv_label_set_text( statusbar_stepcounterlabel, (const char *)arg );
                                     break;
@@ -401,6 +479,15 @@ bool statusbar_bmactl_event_cb( EventBits_t event, void *arg ) {
 }
 
 bool statusbar_rtcctl_event_cb( EventBits_t event, void *arg ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+
     switch( event ) {
         case RTCCTL_ALARM_ENABLED:  
             statusbar_show_icon( STATUSBAR_ALARM );
@@ -409,11 +496,22 @@ bool statusbar_rtcctl_event_cb( EventBits_t event, void *arg ) {
             statusbar_hide_icon( STATUSBAR_ALARM );
             break;
     }
-    statusbar_refresh();
+    statusbar_refresh_update = true;
     return( true );
 }
 
 bool statusbar_blectl_event_cb( EventBits_t event, void *arg ) {
+    
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
+  
+    
     switch( event ) {
         case BLECTL_ON:             statusbar_show_icon( STATUSBAR_BLUETOOTH );
                                     statusbar_style_icon( STATUSBAR_BLUETOOTH, STATUSBAR_STYLE_GRAY );
@@ -427,11 +525,22 @@ bool statusbar_blectl_event_cb( EventBits_t event, void *arg ) {
         case BLECTL_DISCONNECT:     statusbar_style_icon( STATUSBAR_BLUETOOTH, STATUSBAR_STYLE_GRAY );
                                     break;
     }
-    statusbar_refresh();
+     statusbar_refresh_update = true;
     return( true );
 }
 
 bool statusbar_wifictl_event_cb( EventBits_t event, void *arg ) {
+    
+    
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
+
     switch( event ) {
         case WIFICTL_CONNECT:       statusbar_style_icon( STATUSBAR_WIFI, STATUSBAR_STYLE_WHITE );
                                     statusbar_wifi_set_state( true, (char *)arg );
@@ -466,66 +575,101 @@ bool statusbar_wifictl_event_cb( EventBits_t event, void *arg ) {
                                     statusbar_show_icon( STATUSBAR_WIFI );
                                     break;
     }
-    statusbar_refresh();
+    
+    statusbar_refresh_update = true;
     return( true );
 }
 
 bool statusbar_mqtt_event_cb( EventBits_t event, void *arg ) {
 
-switch( event ) {
-        case MQTT_CONNECTED_FLAG:       
-   
-                            log_i("oi mqtt deu bom");
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
+    
+    switch( event ) {
+            case MQTT_CONNECTED_FLAG:               
+                                    
+                                    lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_OK );
+                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_GREEN );
+                                    statusbar_show_icon( STATUSBAR_MQTT);
                                     break;
-        case MQTT_DISCONNECTED_FLAG:    
-      
-                            log_i("oi mqtt deu ruim");
+
+            case MQTT_DISCONNECTED_FLAG: 
+                                           
+                                    lv_img_set_src( statusicon[STATUSBAR_MQTT].icon, LV_SYMBOL_CLOSE );
+                                    statusbar_style_icon( STATUSBAR_MQTT, STATUSBAR_STYLE_RED ); 
+                                    statusbar_show_icon(STATUSBAR_MQTT);
                                     break;
-}
+    }
 
-
-
-    statusbar_refresh();
+    statusbar_refresh_update = true;
     return( true );
 }
 
 
 
 
+bool update_event_cb( EventBits_t event, void *arg ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return( true );
+    }
+    
 
 
+    switch( event ) {
 
+            case HTTP_OTA_START:                                                                              
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE );
+                                    statusbar_show_icon( STATUSBAR_UPDATE );
+                                    break;
 
+            case HTTP_OTA_PROGRESS: 
+                                                          
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE );
+                                    statusbar_show_icon( STATUSBAR_UPDATE ); 
+                                    break;
 
+            case HTTP_OTA_ERROR: 
+                                                          
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE ); 
+                                    statusbar_hide_icon( STATUSBAR_UPDATE );
+                                    break;
 
+            
+            case HTTP_OTA_FINISH: 
+                                    statusbar_style_icon( STATUSBAR_UPDATE, STATUSBAR_STYLE_WHITE ); 
+                                    statusbar_hide_icon( STATUSBAR_UPDATE );
+                                                          
+                                    break;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    }
+    statusbar_refresh_update = true;
+    return( true );
+}
 
 
 void statusbar_volume_slider_event_handler_cb(lv_obj_t *volume_slider, lv_event_t event)
 {
+    
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+    
     if(event == LV_EVENT_VALUE_CHANGED) {
         if( lv_slider_get_value( volume_slider ) == 0){
             sound_set_enabled_config( false );
@@ -543,6 +687,16 @@ void statusbar_volume_slider_event_handler_cb(lv_obj_t *volume_slider, lv_event_
 
 void statusbar_brightness_slider_event_handler_cb(lv_obj_t *brightness_slider, lv_event_t event)
 {
+    
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+    
     if(event == LV_EVENT_VALUE_CHANGED) {
         log_i("Brightness value: %d\n", lv_slider_get_value( brightness_slider ));
         display_set_brightness( lv_slider_get_value( brightness_slider ));
@@ -550,7 +704,16 @@ void statusbar_brightness_slider_event_handler_cb(lv_obj_t *brightness_slider, l
     }
 }
 
-void statusbar_wifi_event_cb( lv_obj_t *wifi, lv_event_t event ) {
+void statusbar_wifi_event_cb( lv_obj_t *wifi, lv_event_t event ) 
+{
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
     switch ( event ) {
         case ( LV_EVENT_VALUE_CHANGED ):
             switch ( lv_imgbtn_get_state( wifi ) ) {
@@ -568,10 +731,20 @@ void statusbar_wifi_event_cb( lv_obj_t *wifi, lv_event_t event ) {
             mainbar_jump_to_tilenumber(wifi_get_setup_tile_num(), LV_ANIM_OFF);
             break;
     }
-    statusbar_refresh();
+    statusbar_refresh_update = true;
 }
 
 void statusbar_bluetooth_event_cb( lv_obj_t *bluetooth, lv_event_t event ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+
     switch ( event ) {
         case ( LV_EVENT_VALUE_CHANGED ):
             switch ( lv_imgbtn_get_state( bluetooth ) ) {
@@ -584,17 +757,27 @@ void statusbar_bluetooth_event_cb( lv_obj_t *bluetooth, lv_event_t event ) {
                 default:
                     break;
             }
-            statusbar_refresh();
+            statusbar_refresh_update = true;
             break;
         case ( LV_EVENT_LONG_PRESSED ):             
             statusbar_expand( false );
             mainbar_jump_to_tilenumber(bluetooth_get_setup_tile_num(), LV_ANIM_OFF);
             break;
     }
-    statusbar_refresh();
+    statusbar_refresh_update = true;
 }
 
 void statusbar_wifi_set_state( bool state, const char *wifiname ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+
     if( state ) {
         lv_imgbtn_set_state( statusbar_wifi, LV_BTN_STATE_RELEASED );
     }
@@ -608,11 +791,30 @@ void statusbar_wifi_set_state( bool state, const char *wifiname ) {
 }
 
 void statusbar_wifi_set_ip_state( bool state, const char *ip ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+
     lv_label_set_text( statusbar_wifiiplabel, ip );
     lv_obj_align( statusbar_wifiiplabel, statusbar_wifilabel, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
 }
 
 void statusbar_bluetooth_set_state( bool state ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
     if ( state ) {
         lv_imgbtn_set_state( statusbar_bluetooth, LV_BTN_STATE_RELEASED );
     }
@@ -622,13 +824,30 @@ void statusbar_bluetooth_set_state( bool state ) {
 }
 
 void statusbar_hide_icon( statusbar_icon_t icon ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
     if ( icon >= STATUSBAR_NUM ) return;
     lv_obj_set_hidden( statusicon[ icon ].icon, true );
 }
 
 void statusbar_show_icon( statusbar_icon_t icon ) {
-    if ( icon >= STATUSBAR_NUM ) return;
 
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+    if ( icon >= STATUSBAR_NUM ) return;
     lv_obj_set_hidden( statusicon[ icon ].icon, false );
 }
 
@@ -638,13 +857,22 @@ void statusbar_style_icon( statusbar_icon_t icon, statusbar_style_t style ) {
 }
 
 void statusbar_refresh( void ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
     lv_obj_t *last_visible = NULL;
     for ( int i = 0 ; i < STATUSBAR_NUM ; i++ ) {
         if ( !lv_obj_get_hidden( statusicon[ i ].icon ) ) {
             if ( last_visible == NULL ) {
                 lv_obj_align( statusicon[ i ].icon, NULL, statusicon[ i ].align, -5, 4);
             } else {
-                lv_obj_align( statusicon[ i ].icon, last_visible, statusicon[ i ].align, -5, 0);
+                lv_obj_align( statusicon[ i ].icon, last_visible, statusicon[ i ].align, -7, 0);
             }
             lv_obj_reset_style_list( statusicon[ i ].icon, LV_OBJ_PART_MAIN );
             lv_obj_add_style( statusicon[ i ].icon, LV_OBJ_PART_MAIN, statusicon[i].style );
@@ -654,6 +882,16 @@ void statusbar_refresh( void ) {
 }
 
 void statusbar_event( lv_obj_t * statusbar, lv_event_t event ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+
     static bool expand = false;
 
     switch( event ) {
@@ -672,6 +910,18 @@ void statusbar_event( lv_obj_t * statusbar, lv_event_t event ) {
 }
 
 void statusbar_expand( bool expand ) {
+
+    /*
+     * check if statusbar ready
+     */
+    if ( !statusbar_init ) {
+        log_e("statusbar not initialized");
+        return;
+    }
+
+
+
+
     if ( expand ) {
         lv_obj_set_height( statusbar, STATUSBAR_EXPAND_HEIGHT );
         lv_style_set_bg_opa(&statusbarstyle[ STATUSBAR_STYLE_NORMAL ], LV_OBJ_PART_MAIN, LV_OPA_50);
