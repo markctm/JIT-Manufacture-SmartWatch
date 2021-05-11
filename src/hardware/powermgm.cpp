@@ -44,10 +44,6 @@
 
 
 
-
-
-
-
 EventGroupHandle_t powermgm_status = NULL;
 portMUX_TYPE DRAM_ATTR powermgmMux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -131,7 +127,7 @@ void powermgm_loop( void ) {
             log_i("go wakeup");       
             powermgm_set_event( POWERMGM_WAKEUP );
             powermgm_send_event_cb( POWERMGM_WAKEUP );
-            setCpuFrequencyMhz(240);
+            setCpuFrequencyMhz(160);
         }
 
         log_i("Free heap: %d", ESP.getFreeHeap());
