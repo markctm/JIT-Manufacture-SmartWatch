@@ -131,7 +131,7 @@ void powermgm_loop( void ) {
             log_i("go wakeup");       
             powermgm_set_event( POWERMGM_WAKEUP );
             powermgm_send_event_cb( POWERMGM_WAKEUP );
-            setCpuFrequencyMhz(160);
+            setCpuFrequencyMhz(240);
         }
 
         log_i("Free heap: %d", ESP.getFreeHeap());

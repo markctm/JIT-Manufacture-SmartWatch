@@ -42,7 +42,7 @@
     /*
     * Firmware version string
     */
-    #define __FIRMWARE__            "2021042300"
+    #define __FIRMWARE__            "2021050001"
 
     
 //-----------Global---------
