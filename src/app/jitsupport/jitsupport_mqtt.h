@@ -26,6 +26,8 @@
 #define MQTT_DISCONNECTED_FLAG                               _BV(1)         /** @brief event mask for mqtt disconnected */
 #define MQTT_START_CONNECTION                                _BV(2)         /** @brief event mask for mqtt disconnected */
 
+#define MQTT_PUBLISH_PAYLOAD_SIZE                             200
+
 
 void mqttctrl_setup(); 
 bool mqqtctrl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );

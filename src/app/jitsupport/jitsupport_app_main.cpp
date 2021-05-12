@@ -1293,7 +1293,7 @@ void sendCanceled(lv_obj_t *obj, lv_event_t event){
   
       log_i("Request que vou fazer:");
       log_i("%s",requestBody);
-      requestBody.toCharArray(payload,200);
+      requestBody.toCharArray(payload,MQTT_PUBLISH_PAYLOAD_SIZE);
 
       MQTT2_publish(atualizartopico, payload);
 
@@ -1322,7 +1322,7 @@ void sendRequest(lv_obj_t *obj, lv_event_t event){
   
       log_i("Request que vou fazer:");
       log_i("%s",requestBody);
-      requestBody.toCharArray(payload,200);
+      requestBody.toCharArray(payload,MQTT_PUBLISH_PAYLOAD_SIZE);
 
       MQTT2_publish(atualizartopico, payload);
 

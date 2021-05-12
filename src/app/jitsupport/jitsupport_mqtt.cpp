@@ -38,24 +38,29 @@
 #include "hardware/motor.h"
 
 
-
 //***************  MQTT ******************//
 
 WiFiClient espClient2;
 PubSubClient client2(espClient2);
 EventGroupHandle_t xMqttCtrlEvent=NULL;
 
-//***************** TASKS *****************//
+//*************** TASKS *****************//
 
 TaskHandle_t _mqttStatus_Task=NULL;
 TaskHandle_t _mqttCtrl_Task=NULL;
 TaskHandle_t _mqtt_init_task=NULL;
+TaskHandle_t _mqttPublish_Task=NULL;
+
+//*************** QUEUE *****************//
+
+QueueHandle_t xMQTT_Publish_Queue;
+
 
 
 void Mqtt_init_task( void * pvParameters );
 void Mqtt_status_task( void * pvParameters );
 void Mqtt_Ctrl_task( void * pvParameters );
-
+void Mqtt_Publish_task( void * pvParameters );
 
 callback_t *mqttctrl_callback = NULL;
 //portMUX_TYPE DRAM_ATTR mqttcrlMux = portMUX_INITIALIZER_UNLOCKED;
@@ -87,8 +92,14 @@ void mqttctrl_setup()
     client2.setServer(MQTT_SERVER, MQTT_PORT);
     client2.setKeepAlive(120);
     client2.setCallback(MQTT2_callback);
+    
+    xMQTT_Publish_Queue = xQueueCreate(5,int(MQTT_PUBLISH_PAYLOAD_SIZE));
+    if(xMQTT_Publish_Queue){
+      log_e("Error to create MQTT_Publish_Queue");
+    }
+  
+    
     xMqttCtrlEvent=xEventGroupCreate();
-
     mqqtctrl_clear_event(MQTT_START_CONNECTION | MQTT_DISCONNECTED_FLAG|MQTT_CONNECTED_FLAG); 
 
   
@@ -116,10 +127,21 @@ void mqttctrl_setup()
                              "Mqtt Contrl",                                 /* Name of the task */
                               2000,                                         /* Stack size in words */
                               NULL,                                         /* Task input parameter */
-                              1,                                            /* Priority of the task */
+                              2,                                            /* Priority of the task */
                               &_mqttCtrl_Task,                              /* Task handle. */
                               0);
    //vTaskSuspend(_mqttCtrl_Task);
+
+
+     xTaskCreatePinnedToCore( Mqtt_Publish_task,                               /* Function to implement the task */
+                             "Mqtt Publish",                                 /* Name of the task */
+                              2000,                                         /* Stack size in words */
+                              NULL,                                         /* Task input parameter */
+                              1,                                            /* Priority of the task */
+                              &_mqttPublish_Task,                              /* Task handle. */
+                              0);
+
+
 
   powermgm_register_loop_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, jit_mqtt_powermgm_loop_cb, "jitsupport app loop" );
 
@@ -148,9 +170,43 @@ void MQTT2_callback(char* topic, byte* message, unsigned int length)
   
 }
 
+
+
+void Mqtt_Publish_task( void * pvParameters )
+{
+  
+    char msg[MQTT_PUBLISH_PAYLOAD_SIZE]; 
+
+    while(1)
+    {     
+          if(client2.state()==MQTT_CONNECTED)
+          {  
+            
+            if(xQueueReceive(xMQTT_Publish_Queue,&msg,portMAX_DELAY)==pdTRUE)
+            {
+              log_i("publicação realizada"); 
+              client2.publish(update_topic, msg);
+            }
+   
+          }
+          else
+          {
+
+            vTaskDelay(CHECK_MQTT_CONNECTION_MILLI_SECONDS / portTICK_PERIOD_MS );
+          }
+    }
+}
+
+
 void MQTT2_publish(char *atualizartopico, char *payload)
 {
-  client2.publish(atualizartopico, payload);
+  
+  // Inserindo Mensagem numa fila para envio 
+  xQueueSend(xMQTT_Publish_Queue,payload,portMAX_DELAY);
+  
+  
+  
+  //client2.publish(atualizartopico, payload);
 }
 
 
