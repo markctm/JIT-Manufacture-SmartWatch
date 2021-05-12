@@ -115,26 +115,26 @@ bool gui_powermgm_event_cb( EventBits_t event, void *arg ) {
 void gui_set_background_image ( uint32_t background_image ) {
     switch ( background_image ) {
         case 0:
-            LV_IMG_DECLARE( bg );
-            lv_img_set_src( img_bin, &bg );
+            LV_IMG_DECLARE( fof_bg1 );
+            lv_img_set_src( img_bin, &fof_bg1 );
             lv_obj_align( img_bin, NULL, LV_ALIGN_CENTER, 0, 0 );
             lv_obj_set_hidden( img_bin, false );
             break;
         case 1:
-            LV_IMG_DECLARE( bg1 );
-            lv_img_set_src( img_bin, &bg1 );
+            LV_IMG_DECLARE( fof_bg2 );
+            lv_img_set_src( img_bin, &fof_bg2 );
             lv_obj_align( img_bin, NULL, LV_ALIGN_CENTER, 0, 0 );
             lv_obj_set_hidden( img_bin, false );
             break;
         case 2:
-            LV_IMG_DECLARE( bg2 );
-            lv_img_set_src( img_bin, &bg2 );
+            LV_IMG_DECLARE( fof_bg3 );
+            lv_img_set_src( img_bin, &fof_bg3 );
             lv_obj_align( img_bin, NULL, LV_ALIGN_CENTER, 0, 0 );
             lv_obj_set_hidden( img_bin, false );
             break;
         case 3:
-            LV_IMG_DECLARE( bg3 );
-            lv_img_set_src( img_bin, &bg3 );
+            LV_IMG_DECLARE( fof_bg4 );
+            lv_img_set_src( img_bin, &fof_bg4 );
             lv_obj_align( img_bin, NULL, LV_ALIGN_CENTER, 0, 0 );
             lv_obj_set_hidden( img_bin, false );
             break;

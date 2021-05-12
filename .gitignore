@@ -1,4 +1,15 @@
-.pio
+
+
+###############################
+# Un-ignore the affected subdirectory
+!/.pio/
+# Ignore subdirectory and all including directories and files to match pattern as valid for the next pattern
+/.pio/*
+# This pattern only works with the two previous patterns
+# (i remember it was working alone on older git versions)
+!/.pio/libdeps/ttgo-t-watch/TTGO TWatch Library/src/imgs/
+###############################
+
 .vscode
 deploy.sh
 .gitignore
