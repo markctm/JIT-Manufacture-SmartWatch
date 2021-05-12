@@ -204,9 +204,6 @@ void MQTT2_publish(char *atualizartopico, char *payload)
   // Inserindo Mensagem numa fila para envio 
   xQueueSend(xMQTT_Publish_Queue,payload,portMAX_DELAY);
   
-  
-  
-  //client2.publish(atualizartopico, payload);
 }
 
 
@@ -333,7 +330,6 @@ void MQTT2_set_client(char *client_name)
 
 }
 
-//, char * topico_area
 
 void MQTT2_set_subscribe_topics(char *topico_receber, char * topico_atualizar, char *topico_area )
 {
